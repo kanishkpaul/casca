@@ -1,0 +1,11 @@
+- name: notepad_hello
+  task: "Open Notepad and type hello world."
+
+- name: calculator
+  task: "Open Calculator and compute 128 plus 256."
+
+- name: browser_search
+  task: "Open the browser and search for ARC AGI benchmark."
+
+- name: file_explorer
+  task: "Open File Explorer and navigate to Downloads."

@@ -1,0 +1,9 @@
+.env
+logs/*
+!logs/.gitkeep
+__pycache__/
+.venv/
+.pytest_cache/
+build/
+dist/
+*.egg-info/

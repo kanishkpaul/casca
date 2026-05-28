@@ -1,0 +1,25 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "casca"
+version = "0.1.0"
+description = "A model-agnostic, screenshot-based desktop-use scaffold for studying visual grounding, action reliability, and computer-use agents."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "typer",
+    "rich",
+    "pydantic",
+    "python-dotenv",
+    "httpx",
+    "pillow",
+    "mss",
+    "pyautogui",
+    "flask",
+    "platformdirs",
+]
+
+[project.scripts]
+casca = "casca.cli:app"

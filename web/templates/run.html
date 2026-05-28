@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Run {{ metadata.run_id }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <a href="/" class="back-btn">&larr; Back to runs</a>
+        <h1>Run: {{ metadata.run_id }}</h1>
+        <div class="run-details">
+            <p><strong>Task:</strong> {{ metadata.task }}</p>
+            <p><strong>Model:</strong> {{ metadata.model }}</p>
+            <p><strong>Started:</strong> {{ metadata.start_time }}</p>
+        </div>
+    </header>
+    <main>
+        <div class="steps-container">
+            {% for step in steps %}
+            <div class="step-card">
+                <div class="step-header">
+                    <h2>Step {{ step.step }}</h2>
+                    <span class="timestamp">{{ step.timestamp }}</span>
+                </div>
+                
+                <div class="step-content">
+                    <div class="step-image">
+                        <img src="/run/{{ run_id }}/{{ step.screenshot }}" alt="Step {{ step.step }} Screenshot">
+                    </div>
+                    <div class="step-info">
+                        <div class="info-box action-box">
+                            <h3>Action</h3>
+                            <pre>{{ step.action | tojson(indent=2) }}</pre>
+                        </div>
+                        
+                        <div class="info-box safety-box">
+                            <h3>Safety</h3>
+                            <pre>{{ step.safety | tojson(indent=2) }}</pre>
+                        </div>
+                        
+                        <div class="info-box exec-box">
+                            <h3>Execution</h3>
+                            <pre>{{ step.execution | tojson(indent=2) }}</pre>
+                        </div>
+                        
+                        <div class="info-box raw-box">
+                            <h3>Model Raw Output</h3>
+                            <pre>{{ step.model_raw }}</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+</body>
+</html>

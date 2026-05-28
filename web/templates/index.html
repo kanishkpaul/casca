@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Casca Replay Viewer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <h1>Casca Runs</h1>
+    </header>
+    <main>
+        {% if runs %}
+            <ul class="run-list">
+            {% for run in runs %}
+                <li>
+                    <a href="/run/{{ run.run_id }}">
+                        <div class="run-header">
+                            <span class="run-id">{{ run.run_id }}</span>
+                            <span class="run-time">{{ run.start_time }}</span>
+                        </div>
+                        <div class="run-task">{{ run.task }}</div>
+                        <div class="run-model">Model: {{ run.model }}</div>
+                    </a>
+                </li>
+            {% endfor %}
+            </ul>
+        {% else %}
+            <p>No runs found in logs directory.</p>
+        {% endif %}
+    </main>
+</body>
+</html>

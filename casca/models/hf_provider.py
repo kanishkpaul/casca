@@ -14,6 +14,9 @@ class HFVisionProvider(VisionActionModel):
             
         self.api_url = config.HF_API_URL or f"https://api-inference.huggingface.co/models/{self.model_id}"
 
+        if not self.api_url.endswith("/v1/chat/completions"):
+            self.api_url = self.api_url.rstrip("/") + "/v1/chat/completions"
+
     def _encode_image(self, screenshot_bytes: bytes) -> str:
         return base64.b64encode(screenshot_bytes).decode("utf-8")
 
@@ -42,15 +45,29 @@ Recent history:
 Please provide the next action in JSON format.
 """
         
-        payload = {
-            "inputs": {
-                "image": img_b64,
-                "prompt": f"{SYSTEM_PROMPT}\n\n{user_prompt}"
-            },
-            "parameters": {
-                "max_new_tokens": 512,
-                "return_full_text": False
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": f"{SYSTEM_PROMPT}\n\n{user_prompt}"
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/png;base64,{img_b64}"
+                        }
+                    }
+                ]
             }
+        ]
+        
+        payload = {
+            "model": self.model_id,
+            "messages": messages,
+            "max_tokens": 512,
+            "stream": False
         }
         
         headers = {
@@ -68,17 +85,15 @@ Please provide the next action in JSON format.
                 return {"error": f"Model {self.model_id} not found."}
             elif response.status_code == 400:
                 # Often image format issues or model doesn't support images
-                raise RuntimeError("The selected Hugging Face endpoint did not accept image input. Casca requires a vision-capable model endpoint. Set HF_MODEL_ID to a VLM or use another provider.")
+                raise RuntimeError(f"The selected Hugging Face endpoint did not accept the request. Error: {response.text}")
             
             response.raise_for_status()
             
             result = response.json()
-            if isinstance(result, list) and len(result) > 0:
-                output = result[0].get("generated_text", "")
-            elif isinstance(result, dict):
-                output = result.get("generated_text", "")
+            if "choices" in result and len(result["choices"]) > 0:
+                output = result["choices"][0].get("message", {}).get("content", "")
             else:
-                return {"error": "Unexpected response format from HF API."}
+                return {"error": f"Unexpected response format from HF API: {result}"}
                 
             return {"raw_output": output}
             

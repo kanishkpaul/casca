@@ -1,98 +1,108 @@
 # Casca
 
-Casca is a screenshot-based desktop agent scaffold for studying visual grounding, action reliability, and computer-use loops.
+A screenshot-driven desktop agent for studying visual grounding and
+computer-use loops. Each step takes a screenshot, asks a vision model for one
+typed action, validates it, executes it with the mouse and keyboard, and logs
+everything.
 
-I built it as an experimental harness for desktop-use agents: take a screenshot, ask a model for one structured action, execute it, log the outcome, and repeat. The emphasis is on grounded interaction and inspectable runs, not pretending this is a polished general-purpose operator.
+```text
+observe (screenshot) → propose (one JSON action) → validate → execute → log → repeat
+```
 
-## What it does today
+It's a harness for experiments, not a polished operator: the value is in the
+typed actions, dry runs, and complete logs that make failures easy to inspect.
 
-- Captures desktop screenshots as the model's observation stream
-- Supports a model-backed Hugging Face provider and a mock provider
-- Predicts one structured action at a time
-- Executes mouse, keyboard, scroll, drag, wait, and terminal completion actions
-- Logs metadata, screenshots, model output, safety decisions, and execution results
-- Offers `--dry-run` and `--confirm-each-step` modes for safer iteration
-- Ships with a small Flask web viewer for replaying past runs
+## What it does
 
-## Why this project matters
+- Captures the screen as the model's only observation
+- Asks the model for exactly one action: click, double/right click, move, drag,
+  type, key press, hotkey, scroll, wait, done, or fail
+- Parses actions into Pydantic models instead of loose strings
+- `--dry-run` proposes actions without executing them; `--confirm-each-step`
+  asks before each one
+- Saves every step's screenshot, raw model output, and result under `logs/`
+- `casca web` opens a small Flask viewer for replaying past runs
 
-Desktop-use agents are interesting because they force a model to deal with messy interfaces, partial observability, and action consequences.
+## Install
 
-Casca is the kind of repo I like building when I want to study:
-
-- how well a model grounds actions in pixels
-- how often action loops appear
-- what logging is needed to debug failures
-- where safety checks belong in a desktop-control stack
-
-## Local setup
+Python 3.10+.
 
 ```bash
+python3 -m venv .venv && source .venv/bin/activate
 pip install -e .
+cp .env.example .env    # then add your Hugging Face token
 ```
 
-Create a `.env` file using the values from `.env.example`:
+`.env` sets the model (`HF_MODEL_ID`, default `google/gemma-4-31b-it`), the
+step limit, which monitor to capture, and the screenshot width sent to the
+model.
 
-```env
-HF_API_TOKEN=hf_your_token_here
-HF_MODEL_ID=google/gemma-4-31b-it
-HF_API_URL=
-CASCA_MAX_STEPS=20
-CASCA_MONITOR=1
-CASCA_SCREENSHOT_MAX_WIDTH=1280
-CASCA_STEP_DELAY=0.5
+## macOS setup
+
+macOS won't let a program see or control the screen until you grant it
+permission. Casca runs inside your terminal, so the permission goes to the
+terminal app (Terminal, iTerm, Ghostty, VS Code, and so on):
+
+1. **System Settings → Privacy & Security → Screen Recording**: enable your
+   terminal. Without this, screenshots come back as a flat, empty frame
+   and Casca doesn't warn you: the model is handed a blank screen.
+2. **System Settings → Privacy & Security → Accessibility**: enable your
+   terminal. Without this, clicks and key presses are silently dropped.
+3. Quit and reopen the terminal after changing either setting.
+
+Check with a dry run and open the saved screenshot:
+
+```bash
+casca run "Open Calculator" --provider mock --dry-run --max-steps 3
+open logs/run_*/screenshots/step_000.png
 ```
+
+If the image shows your windows, capture works. Keyboard shortcuts on macOS
+use `command`, not `ctrl` (for example `["command", "space"]` for Spotlight).
+The prompt's examples still use `ctrl`, so a model may need telling.
 
 ## Usage
 
-Run the agent:
-
 ```bash
-casca run "Open Notepad and type hello world" --max-steps 10 --confirm-each-step
-```
-
-Dry-run without executing actions:
-
-```bash
+# Safe first run: mock model, nothing executed
 casca run "Open Calculator" --provider mock --dry-run
-```
 
-Open the replay viewer:
+# Real model, confirm every action before it happens
+casca run "Open TextEdit and type hello world" --max-steps 10 --confirm-each-step
 
-```bash
+# Browse past runs
 casca web
 ```
+
+Move the mouse into a screen corner to abort a run (PyAutoGUI's fail-safe).
+
+## Known issues
+
+Found while testing on a MacBook (1470×956 display):
+
+- **Click coordinates are off by the resize factor.** Screenshots are shrunk
+  to `CASCA_SCREENSHOT_MAX_WIDTH` (1280 px) before the model sees them, but the
+  prompt gives the real screen size and coordinates are never scaled back. On
+  a 1470-wide screen clicks land about 15% off; on a 1920-wide Windows screen,
+  about 50%. Until this is fixed, set `CASCA_SCREENSHOT_MAX_WIDTH` to your
+  screen width.
+- **Per-action safety is a stub.** The only active check scans the *task text*
+  for keywords (`password`, `delete`, `buy`, `bank`, ...) and refuses unless
+  `--unsafe` is passed. `SafetyPolicy.check_action` currently approves every
+  action, so use `--dry-run` or `--confirm-each-step` for anything real.
+- **Blank screenshots aren't detected** (see the macOS setup above).
+- `examples/tasks.yaml` still uses Windows apps (Notepad, File Explorer).
 
 ## Repo layout
 
 ```text
-casca/            agent loop, actions, safety, logging, providers
+casca/            agent loop, actions, safety, screen capture, providers
+casca/models/     Hugging Face and mock providers
 web/              Flask replay viewer
-examples/         sample task definitions
-logs/             run outputs
+examples/         sample tasks
+logs/             run output (one folder per run)
 ```
 
-## Implementation notes
+## License
 
-- The run loop is intentionally simple: observe, propose, validate, execute, log.
-- Actions are defined as typed Pydantic models rather than loose strings.
-- Every executed step stores a screenshot plus the raw model output, which makes debugging much easier later.
-- The replay UI is basic, but useful enough to inspect what happened across a run without digging through JSONL by hand.
-
-## Current limitations
-
-- The safety layer is still lightweight and keyword-based
-- Coordinate-based desktop actions are inherently brittle
-- This is a single-agent scaffold, not a full planning stack
-- The replay UI is functional but minimal
-
-## What I am adding next
-
-- Better safety checks for sensitive typing and destructive actions
-- Stronger recovery behavior after failed desktop actions
-- More robust replay and trace browsing
-- Additional providers and evaluation-style task sets
-
-## Why it belongs in this repo collection
-
-Casca shows the desktop side of the same broader interest that drives my browser and reasoning repos: grounded agents, inspectable traces, and practical experiments around reliability instead of hype.
+MIT

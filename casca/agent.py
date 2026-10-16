@@ -135,7 +135,10 @@ class CascaAgent:
             return "rejected"
 
         self.logger = RunLogger(log_dir=self.log_dir)
-        self.logger.log_metadata(task, self.max_steps, self.model.__class__.__name__)
+        self.logger.log_metadata(
+            task, self.max_steps, getattr(self.model, "model", self.model.__class__.__name__),
+            destination=getattr(self.model, "destination", "none"), coords=self.coords, apps=self.apps,
+            monitor=self.screen.get_screen_size(), max_seconds=self.max_seconds, dry_run=self.dry_run)
         outcome = "crashed"
         self.stop_requested, self.finished = threading.Event(), threading.Event()
         if not self.dry_run:
@@ -165,8 +168,10 @@ class CascaAgent:
             screenshot = self.screen.screenshot()
             width, height = (1000, 1000) if self.coords == "norm1000" else self.screen.image_size
 
+            trace = {"image_size": list(self.screen.image_size)}
+
             def log(action, safety, execution, raw=None):
-                self.logger.log_step(step, task, screenshot, raw, action, safety, execution)
+                self.logger.log_step(step, task, screenshot, raw, action, safety, execution, **trace)
 
             # Checked every step: a frame that turns black mid-run can be the Windows UAC prompt,
             # which sits on a secure desktop Casca cannot capture or click.
@@ -183,6 +188,7 @@ class CascaAgent:
                     console.print(f"[bold red]Model error:[/bold red] {escape(str(result['error']))}")
                     log(None, None, {"status": "model_error", "error": result["error"]})
                     return "model_error"
+                trace["sent_bytes"] = trace.get("sent_bytes", 0) + result.get("sent_bytes", 0)
                 raw_output = result["raw_output"]
                 action, problem = self.parse_action(raw_output)
                 if action:
@@ -241,7 +247,9 @@ class CascaAgent:
                     log(action.model_dump(), safety_log, {"status": "no_input", "error": problem}, raw_output)
                     return "no_input"
                 try:
-                    execution_log = self.desktop.execute_action(to_screen(action, (width, height), monitor))
+                    mapped = to_screen(action, (width, height), monitor)
+                    trace["screen_point"] = {k: v for k, v in mapped.model_dump().items() if k in POINT_FIELDS}
+                    execution_log = self.desktop.execute_action(mapped)
                 except FailSafeException:
                     log(action.model_dump(), safety_log, {"status": "interrupted"}, raw_output)
                     raise

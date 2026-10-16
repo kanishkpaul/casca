@@ -17,13 +17,14 @@ class RunLogger:
         self.metadata_file = self.run_dir / "metadata.json"
         self.steps_file.touch()
 
-    def log_metadata(self, task: str, max_steps: int, model: str):
+    def log_metadata(self, task: str, max_steps: int, model: str, **extra):
         metadata = {
             "run_id": self.run_id,
             "task": task,
             "max_steps": max_steps,
             "model": model,
-            "start_time": datetime.now().isoformat()
+            "start_time": datetime.now().isoformat(),
+            **extra,
         }
         with open(self.metadata_file, "w") as f:
             json.dump(metadata, f, indent=2)
@@ -33,7 +34,7 @@ class RunLogger:
         metadata.update(outcome=outcome, end_time=datetime.now().isoformat())
         self.metadata_file.write_text(json.dumps(metadata, indent=2))
 
-    def log_step(self, step: int, task: str, screenshot_bytes: bytes, model_raw: str | None, action: dict | None, safety: dict | None, execution: dict):
+    def log_step(self, step: int, task: str, screenshot_bytes: bytes, model_raw: str | None, action: dict | None, safety: dict | None, execution: dict, **extra):
         screenshot_filename = f"step_{step:03d}.png"
         screenshot_path = self.screenshots_dir / screenshot_filename
         
@@ -48,7 +49,8 @@ class RunLogger:
             "action": action,
             "safety": safety,
             "execution": execution,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
+            **extra,
         }
         
         with open(self.steps_file, "a") as f:

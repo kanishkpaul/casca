@@ -159,3 +159,11 @@ def test_moving_the_mouse_takes_over(run_agent):
 def test_handback_without_a_terminal_ends_the_run(run_agent):
     meta, _ = run_agent(ScriptedModel('{"action": "handback", "reason": "sign in"}'))
     assert meta["outcome"] == "handed_back"
+
+
+def test_trace_records_geometry_point_and_bytes(run_agent):
+    model = ScriptedModel({"raw_output": '{"action": "click", "x": 640, "y": 416, "reason": "r", "expect": "e"}', "sent_bytes": 1234}, DONE)
+    meta, steps = run_agent(model)
+    assert steps[0]["image_size"] == [1280, 832] and steps[0]["sent_bytes"] == 1234
+    assert steps[0]["screen_point"] == {"x": 735, "y": 478}
+    assert meta["monitor"]["width"] == 1470 and meta["destination"] == "none"

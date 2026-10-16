@@ -168,3 +168,8 @@ pre {
     font-family: 'Consolas', 'Monaco', monospace;
     font-size: 0.9em;
 }
+
+/* A step a gate stopped or asked about. */
+.step-card.gated {
+    border-left: 4px solid #d4a017;
+}

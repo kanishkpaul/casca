@@ -19,7 +19,7 @@
     <main>
         <div class="steps-container">
             {% for step in steps %}
-            <div class="step-card">
+            <div class="step-card{% if step.safety and step.safety.gate and step.safety.gate != 'allow' %} gated{% endif %}">
                 <div class="step-header">
                     <h2>Step {{ step.step }}</h2>
                     <span class="timestamp">{{ step.timestamp }}</span>

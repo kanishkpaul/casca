@@ -16,6 +16,7 @@ class AnthropicProvider(VisionActionModel):
         self.anthropic = anthropic
         self.client = anthropic.Anthropic(api_key=api_key, base_url=base_url or None)
         self.model, self.effort = model, effort
+        self.destination = self.client.base_url.host
 
     def propose_action(self, task, screenshot_bytes, step_index, history, screen) -> dict:
         extra = {"output_config": {"effort": self.effort}} if self.effort else {}
@@ -37,4 +38,5 @@ class AnthropicProvider(VisionActionModel):
             return {"error": f"Anthropic API unreachable: {e}"}
         if response.stop_reason == "refusal":
             return {"error": f"the model declined this step: {getattr(response.stop_details, 'category', None)}"}
-        return {"raw_output": "".join(block.text for block in response.content if block.type == "text")}
+        return {"raw_output": "".join(block.text for block in response.content if block.type == "text"),
+                "sent_bytes": len(image["data"]) + len(SYSTEM_PROMPT)}

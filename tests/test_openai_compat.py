@@ -25,7 +25,7 @@ def reply(monkeypatch, *responses):
 
 def test_rate_limit_is_retried(monkeypatch):
     ok = httpx.Response(200, json={"choices": [{"message": {"content": "{}"}}]})
-    assert reply(monkeypatch, httpx.Response(429), ok) == {"raw_output": "{}"}
+    assert reply(monkeypatch, httpx.Response(429), ok)["raw_output"] == "{}"
 
 
 def test_http_error_names_status_and_body(monkeypatch):

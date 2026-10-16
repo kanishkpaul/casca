@@ -19,7 +19,7 @@ def text_reply(text, stop="end_turn"):
 
 def test_request_caches_the_system_prompt_and_asks_for_fallbacks():
     p = provider("claude-opus-5-5", text_reply('{"action": "wait"}'))
-    assert p.propose_action("t", b"png", 0, [], {"width": 1280, "height": 832}) == {"raw_output": '{"action": "wait"}'}
+    assert p.propose_action("t", b"png", 0, [], {"width": 1280, "height": 832})["raw_output"] == '{"action": "wait"}'
     sent = p.sent[0]
     assert sent["system"][0]["cache_control"] == {"type": "ephemeral"}
     assert sent["fallbacks"] == "default" and sent["messages"][0]["content"][0]["type"] == "image"

@@ -78,3 +78,11 @@ def test_three_bad_replies_end_with_parse_error(run_agent):
 def test_first_of_two_json_objects_is_used(run_agent):
     meta, _ = run_agent(ScriptedModel(DONE + ' {"extra": true}'))
     assert meta["outcome"] == "done"
+
+
+def test_history_carries_arguments_reason_and_error(run_agent):
+    model = ScriptedModel(CLICK, DONE)
+    run_agent(model, desktop=FakeDesktop(fail=OSError("no input")))
+    entry = model.histories[1][0]
+    assert entry["action"] == {"action": "click", "x": 10, "y": 10, "reason": "r"}
+    assert entry["execution"]["error"] == "OSError: no input"

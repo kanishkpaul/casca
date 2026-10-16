@@ -143,7 +143,7 @@ class CascaAgent:
                     execution_log = {"status": "error", "error": f"{type(e).__name__}: {e}"}
 
             log(action.model_dump(), safety_log, execution_log, raw_output)
-            self.history.append({"step": step, "action": action.action, "execution": execution_log})
+            self.history.append({"step": step, "action": action.model_dump(), "execution": execution_log})
 
             if action.action == "done":
                 console.print(f"[bold green]Task completed![/bold green]\nAnswer: {escape(action.answer)}")

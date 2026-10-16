@@ -24,3 +24,10 @@ def test_paths_outside_the_logs_directory_are_not_found(client, tmp_path, url):
     (tmp_path.parent / "screenshots").mkdir(exist_ok=True)
     (tmp_path.parent / "screenshots" / "leak.txt").write_text("secret")
     assert client.get(url).status_code == 404
+
+
+def test_corrupt_run_is_listed_with_the_reason(client, tmp_path):
+    bad = tmp_path / "run_20261016_221805_0000"
+    bad.mkdir()
+    (bad / "metadata.json").write_text("{")
+    assert b"Could not load this run" in client.get("/").data

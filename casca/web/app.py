@@ -25,8 +25,8 @@ def index():
                 try:
                     metadata, _ = load_run(run_dir)
                     runs.append(metadata)
-                except Exception:
-                    pass
+                except Exception as e:
+                    runs.append({"run_id": run_dir.name, "task": f"Could not load this run: {e}"})
     return render_template("index.html", runs=runs)
 
 @app.route("/run/<run_id>")

@@ -1,3 +1,5 @@
+import re
+
 from casca.actions import BaseAction, TypeAction
 
 class SafetyPolicy:
@@ -7,10 +9,10 @@ class SafetyPolicy:
 
     def check_task(self, task: str) -> tuple[bool, str | None]:
         task_lower = task.lower()
-        dangerous_keywords = ["password", "delete", "rm ", "format", "buy", "purchase", "bank", "crypto"]
-        
+        dangerous_keywords = ["password", "delete", "rm", "format", "buy", "purchase", "bank", "crypto"]
+
         for keyword in dangerous_keywords:
-            if keyword in task_lower:
+            if re.search(rf"\b{keyword}\b", task_lower):
                 if not self.unsafe:
                     return False, f"Task contains sensitive keyword '{keyword}'. Use --unsafe to bypass."
                     

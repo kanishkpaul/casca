@@ -1,40 +1,42 @@
 from pydantic import BaseModel, Field
-from typing import Literal
+from typing import Annotated, Literal
+
+Coord = Annotated[int, Field(ge=0)]
 
 class BaseAction(BaseModel):
     reason: str = Field(description="Reason for taking this action.")
 
 class ClickAction(BaseAction):
     action: Literal["click"]
-    x: int
-    y: int
+    x: Coord
+    y: Coord
 
 class DoubleClickAction(BaseAction):
     action: Literal["double_click"]
-    x: int
-    y: int
+    x: Coord
+    y: Coord
 
 class RightClickAction(BaseAction):
     action: Literal["right_click"]
-    x: int
-    y: int
+    x: Coord
+    y: Coord
 
 class MoveMouseAction(BaseAction):
     action: Literal["move_mouse"]
-    x: int
-    y: int
+    x: Coord
+    y: Coord
 
 class DragAction(BaseAction):
     action: Literal["drag"]
-    x1: int
-    y1: int
-    x2: int
-    y2: int
-    duration: float = 0.3
+    x1: Coord
+    y1: Coord
+    x2: Coord
+    y2: Coord
+    duration: float = Field(0.3, gt=0, le=5)
 
 class TypeAction(BaseAction):
     action: Literal["type"]
-    text: str
+    text: str = Field(min_length=1)
 
 class PressAction(BaseAction):
     action: Literal["press"]
@@ -42,7 +44,7 @@ class PressAction(BaseAction):
 
 class HotkeyAction(BaseAction):
     action: Literal["hotkey"]
-    keys: list[str]
+    keys: list[str] = Field(min_length=1)
 
 class ScrollAction(BaseAction):
     action: Literal["scroll"]
@@ -50,7 +52,7 @@ class ScrollAction(BaseAction):
 
 class WaitAction(BaseAction):
     action: Literal["wait"]
-    ms: int
+    ms: int = Field(ge=0, le=10_000)
 
 class DoneAction(BaseAction):
     action: Literal["done"]

@@ -17,3 +17,10 @@ def client(tmp_path, monkeypatch):
 
 def test_index_lists_runs(client):
     assert b"run_20261016_221804_7f3a" in client.get("/").data
+
+
+@pytest.mark.parametrize("url", ["/run/..", "/run/../screenshots/leak.txt", "/run/nope"])
+def test_paths_outside_the_logs_directory_are_not_found(client, tmp_path, url):
+    (tmp_path.parent / "screenshots").mkdir(exist_ok=True)
+    (tmp_path.parent / "screenshots" / "leak.txt").write_text("secret")
+    assert client.get(url).status_code == 404

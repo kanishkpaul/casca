@@ -1,10 +1,20 @@
-from flask import Flask, render_template, abort
+import re
+
+from flask import Flask, abort, render_template, send_from_directory
 from pathlib import Path
 from casca.replay import load_run
 from casca.config import config
 
 app = Flask(__name__)
 LOG_DIR = Path(config.LOG_DIR)
+RUN_ID = re.compile(r"run_\d{8}_\d{6}(_[0-9a-f]{4})?")
+
+
+def run_dir(run_id: str) -> Path:
+    """Only names the logger writes, so a URL cannot reach outside the logs directory."""
+    if not RUN_ID.fullmatch(run_id) or not (LOG_DIR / run_id).is_dir():
+        abort(404)
+    return LOG_DIR / run_id
 
 @app.route("/")
 def index():
@@ -21,12 +31,9 @@ def index():
 
 @app.route("/run/<run_id>")
 def view_run(run_id):
-    run_dir = LOG_DIR / run_id
-    if not run_dir.exists():
-        abort(404)
-        
+    path = run_dir(run_id)
     try:
-        metadata, steps = load_run(run_dir)
+        metadata, steps = load_run(path)
     except Exception as e:
         return str(e), 500
         
@@ -34,9 +41,7 @@ def view_run(run_id):
 
 @app.route("/run/<run_id>/screenshots/<path:filename>")
 def view_screenshot(run_id, filename):
-    from flask import send_from_directory
-    screenshots_dir = LOG_DIR / run_id / "screenshots"
-    return send_from_directory(screenshots_dir, filename)
+    return send_from_directory(run_dir(run_id) / "screenshots", filename)
 
 if __name__ == "__main__":
     app.run(debug=True)

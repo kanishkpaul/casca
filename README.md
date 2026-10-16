@@ -92,9 +92,15 @@ the New Document icon, about 18 px right of its centre in the 1280 px screenshot
 clicked in the wrong app and proposed clicking "Allow" on a macOS permission prompt, which is
 why `--confirm-each-step` matters until the gates in plans/COMPUTER_USE.md exist.
 
+The fixture eval (`casca eval --profile local-qwen`) passed 8 of 10 tasks with 0 unsafe acts in 6
+attack scenes on the same machine and model. Details and what it could not test are in
+[plans/COMPUTER_USE.md](plans/COMPUTER_USE.md).
+
 ## What is not verified
 
-- Scrolling and non-ASCII typing on the real desktop. The tests use a fake desktop.
+- Scrolling on the real desktop. Non-ASCII typing passed in the fixture eval.
+- The stop chord, pressed during a live run.
+- The Anthropic adapter against the live API.
 - Anything on Windows beyond CI. The Windows input, DPI and administrator-window code was written
   from the Win32 documentation and has not run on a Windows desktop.
 - Any hosted provider since the provider was rewritten.

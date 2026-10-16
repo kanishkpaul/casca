@@ -74,12 +74,28 @@ pytest -q                                                  # tests, on fakes onl
 Runs are stored in the OS data directory (`~/Library/Application Support/casca/logs` on macOS),
 or `CASCA_LOG_DIR`. Move the mouse into a screen corner, or press Ctrl-C, to stop a run.
 
+## Tested
+
+On 2026-10-16, on a MacBook (M5, 16 GB, macOS 27), with Qwen3-VL 8B Instruct Q4_K_M served
+locally by llama.cpp:
+
+```bash
+llama-server -m Qwen3VL-8B-Instruct-Q4_K_M.gguf --mmproj mmproj-Qwen3VL-8B-Instruct-Q8_0.gguf --port 8080
+casca run "Open TextEdit, create a new document and type hello" \
+  --base-url http://127.0.0.1:8080/v1 --model qwen3-vl-8b --coords norm1000 --confirm-each-step
+```
+
+TextEdit was already running with its Open panel showing. The run clicked New Document, typed
+"hello" and reported done in 3 steps and 22 s, and the document showed "hello". The click landed on
+the New Document icon, about 18 px right of its centre in the 1280 px screenshot. In earlier attempts the model also
+clicked in the wrong app and proposed clicking "Allow" on a macOS permission prompt, which is
+why `--confirm-each-step` matters until the gates in plans/COMPUTER_USE.md exist.
+
 ## What is not verified
 
-- Clicks, typing and scrolling on the real desktop since the coordinate, Unicode and scroll fixes.
-  The tests use a fake desktop.
+- Scrolling and non-ASCII typing on the real desktop. The tests use a fake desktop.
 - Anything on Windows. The Windows code paths were written from the library sources.
-- A live call to any model since the provider was rewritten.
+- Any hosted provider since the provider was rewritten.
 - Clicks on a Windows monitor other than the primary are still wrong: PyAutoGUI normalises mouse
   coordinates to the primary screen.
 

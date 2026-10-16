@@ -3,8 +3,9 @@ from casca.unicode_input import type_unicode
 from casca.actions import (
     BaseAction, ClickAction, DoubleClickAction, RightClickAction,
     MoveMouseAction, DragAction, TypeAction, PressAction, HotkeyAction,
-    ScrollAction, WaitAction, DoneAction, FailAction
+    ScrollAction, WaitAction, OpenAppAction, DoneAction, FailAction
 )
+import subprocess
 import sys
 import time
 
@@ -61,6 +62,10 @@ class DesktopController:
     def scroll(self, amount: int) -> None:
         pyautogui.scroll(amount * SCROLL_UNIT)
 
+    def open_app(self, name: str) -> None:
+        command = ["open", "-a", name] if sys.platform == "darwin" else ["cmd", "/c", "start", "", name]
+        subprocess.run(command, check=True, capture_output=True, timeout=10)
+
     def wait(self, ms: int) -> None:
         time.sleep(ms / 1000.0)
 
@@ -85,6 +90,8 @@ class DesktopController:
             self.scroll(action.amount)
         elif isinstance(action, WaitAction):
             self.wait(action.ms)
+        elif isinstance(action, OpenAppAction):
+            self.open_app(action.name)
         elif isinstance(action, DoneAction):
             pass # Handled in loop
         elif isinstance(action, FailAction):

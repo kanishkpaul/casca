@@ -22,3 +22,8 @@ def test_out_of_range_actions_are_rejected(data):
 def test_scroll_is_bounded_in_notches():
     with pytest.raises(ValidationError):
         TypeAdapter(ActionType).validate_python({"action": "scroll", "amount": -650, "reason": "r"})
+
+
+def test_open_app_parses():
+    action = TypeAdapter(ActionType).validate_python({"action": "open_app", "name": "TextEdit", "reason": "r"})
+    assert action.name == "TextEdit"

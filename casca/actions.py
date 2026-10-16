@@ -54,6 +54,10 @@ class WaitAction(BaseAction):
     action: Literal["wait"]
     ms: int = Field(ge=0, le=10_000)
 
+class OpenAppAction(BaseAction):
+    action: Literal["open_app"]
+    name: str = Field(min_length=1, description="Application name, e.g. TextEdit or Notepad.")
+
 class DoneAction(BaseAction):
     action: Literal["done"]
     answer: str
@@ -73,6 +77,7 @@ ActionType = Annotated[
     | HotkeyAction
     | ScrollAction
     | WaitAction
+    | OpenAppAction
     | DoneAction
     | FailAction,
     Field(discriminator="action"),

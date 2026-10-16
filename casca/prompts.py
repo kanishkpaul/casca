@@ -17,7 +17,7 @@ The computer runs <os>. Use <mod> as the modifier in keyboard shortcuts.
 You must return exactly one JSON object and nothing else.
 
 You may choose one of:
-click, double_click, right_click, move_mouse, drag, type, press, hotkey, scroll, wait, done, fail.
+click, double_click, right_click, move_mouse, drag, type, press, hotkey, scroll, wait, open_app, done, fail.
 
 Rules:
 1. Choose only the immediate next action.
@@ -46,6 +46,8 @@ Examples:
 {"action":"hotkey","keys":["<mod>","l"],"reason":"Focus the browser address bar."}
 
 {"action":"scroll","amount":-5,"reason":"Scroll down five notches; more content is likely below."}
+
+{"action":"open_app","name":"Calculator","reason":"Open the app by name instead of looking for its icon."}
 
 {"action":"done","answer":"The requested information is visible on screen.","reason":"The task objective has been reached."}
 

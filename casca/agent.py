@@ -164,6 +164,9 @@ class CascaAgent:
             if action.action == "done":
                 console.print(f"[bold green]Task completed![/bold green]\nAnswer: {escape(action.answer)}")
                 return "done"
+            if action.action == "handback":
+                console.print(f"[bold yellow]Your turn:[/bold yellow] {escape(action.reason)}")
+                return "handed_back"
             if action.action == "fail":
                 console.print(f"[bold red]Agent reported failure:[/bold red]\nReason: {escape(action.reason)}")
                 return "fail"

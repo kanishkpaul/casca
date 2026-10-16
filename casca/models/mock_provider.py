@@ -20,14 +20,16 @@ class MockVisionProvider(VisionActionModel):
                 "action": "move_mouse",
                 "x": screen["width"] // 2,
                 "y": screen["height"] // 2,
-                "reason": "Mock move to center."
+                "reason": "Mock move to center.",
+                "expect": "The pointer is in the centre."
             }
         elif self.step_count == 2:
             action = {
                 "action": "click",
                 "x": screen["width"] // 2,
                 "y": screen["height"] // 2,
-                "reason": "Mock click center."
+                "reason": "Mock click center.",
+                "expect": "The centre was clicked."
             }
         else:
             action = {

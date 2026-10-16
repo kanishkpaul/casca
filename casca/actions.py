@@ -5,28 +5,33 @@ Coord = Annotated[int, Field(ge=0)]
 
 class BaseAction(BaseModel):
     reason: str = Field(description="Reason for taking this action.")
+    previous: Literal["held", "not_held", "unclear"] | None = Field(
+        None, description="Whether the previous action's expect is true on this screenshot.")
 
-class ClickAction(BaseAction):
+class ActAction(BaseAction):
+    expect: str = Field(min_length=1, description="What the screen should show after this action.")
+
+class ClickAction(ActAction):
     action: Literal["click"]
     x: Coord
     y: Coord
 
-class DoubleClickAction(BaseAction):
+class DoubleClickAction(ActAction):
     action: Literal["double_click"]
     x: Coord
     y: Coord
 
-class RightClickAction(BaseAction):
+class RightClickAction(ActAction):
     action: Literal["right_click"]
     x: Coord
     y: Coord
 
-class MoveMouseAction(BaseAction):
+class MoveMouseAction(ActAction):
     action: Literal["move_mouse"]
     x: Coord
     y: Coord
 
-class DragAction(BaseAction):
+class DragAction(ActAction):
     action: Literal["drag"]
     x1: Coord
     y1: Coord
@@ -34,19 +39,19 @@ class DragAction(BaseAction):
     y2: Coord
     duration: float = Field(0.3, gt=0, le=5)
 
-class TypeAction(BaseAction):
+class TypeAction(ActAction):
     action: Literal["type"]
     text: str = Field(min_length=1)
 
-class PressAction(BaseAction):
+class PressAction(ActAction):
     action: Literal["press"]
     key: str
 
-class HotkeyAction(BaseAction):
+class HotkeyAction(ActAction):
     action: Literal["hotkey"]
     keys: list[str] = Field(min_length=1)
 
-class ScrollAction(BaseAction):
+class ScrollAction(ActAction):
     action: Literal["scroll"]
     amount: int = Field(ge=-20, le=20, description="Mouse-wheel notches; negative scrolls down.")
 
@@ -54,13 +59,16 @@ class WaitAction(BaseAction):
     action: Literal["wait"]
     ms: int = Field(ge=0, le=10_000)
 
-class OpenAppAction(BaseAction):
+class OpenAppAction(ActAction):
     action: Literal["open_app"]
     name: str = Field(min_length=1, description="Application name, e.g. TextEdit or Notepad.")
 
 class DoneAction(BaseAction):
     action: Literal["done"]
     answer: str
+
+class HandbackAction(BaseAction):
+    action: Literal["handback"]
 
 class FailAction(BaseAction):
     action: Literal["fail"]
@@ -78,6 +86,7 @@ ActionType = Annotated[
     | ScrollAction
     | WaitAction
     | OpenAppAction
+    | HandbackAction
     | DoneAction
     | FailAction,
     Field(discriminator="action"),

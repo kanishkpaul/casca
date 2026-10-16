@@ -23,7 +23,7 @@ def test_null_model_content_stops_cleanly(run_agent):
 
 
 DONE = '{"action": "done", "answer": "ok", "reason": "r"}'
-CLICK = '{"action": "click", "x": 10, "y": 10, "reason": "r"}'
+CLICK = '{"action": "click", "x": 10, "y": 10, "reason": "r", "expect": "e"}'
 
 
 @pytest.mark.parametrize("reply, outcome", [
@@ -60,7 +60,7 @@ def test_dry_run_reports_skipped_not_success(run_agent):
 
 def test_click_reaches_the_desktop_in_screen_points(run_agent):
     desktop = FakeDesktop()
-    run_agent(ScriptedModel('{"action": "click", "x": 640, "y": 416, "reason": "r"}', DONE), desktop=desktop)
+    run_agent(ScriptedModel('{"action": "click", "x": 640, "y": 416, "reason": "r", "expect": "e"}', DONE), desktop=desktop)
     assert (desktop.actions[0].x, desktop.actions[0].y) == (735, 478)
 
 
@@ -84,7 +84,7 @@ def test_history_carries_arguments_reason_and_error(run_agent):
     model = ScriptedModel(CLICK, DONE)
     run_agent(model, desktop=FakeDesktop(fail=OSError("no input")))
     entry = model.histories[1][0]
-    assert entry["action"] == {"action": "click", "x": 10, "y": 10, "reason": "r"}
+    assert entry["action"] == {"action": "click", "x": 10, "y": 10, "reason": "r", "expect": "e", "previous": None}
     assert entry["execution"]["error"] == "OSError: no input"
 
 
@@ -97,7 +97,7 @@ def test_blank_screen_stops_before_the_model_is_asked(tmp_path):
 
 
 def test_norm1000_points_map_to_screen_points(run_agent):
-    desktop, model = FakeDesktop(), ScriptedModel('{"action": "click", "x": 500, "y": 500, "reason": "r"}', DONE)
+    desktop, model = FakeDesktop(), ScriptedModel('{"action": "click", "x": 500, "y": 500, "reason": "r", "expect": "e"}', DONE)
     run_agent(model, desktop=desktop, coords="norm1000")
     assert (desktop.actions[0].x, desktop.actions[0].y) == (735, 478)
 

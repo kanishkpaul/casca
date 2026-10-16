@@ -25,5 +25,5 @@ def test_scroll_is_bounded_in_notches():
 
 
 def test_open_app_parses():
-    action = TypeAdapter(ActionType).validate_python({"action": "open_app", "name": "TextEdit", "reason": "r"})
+    action = TypeAdapter(ActionType).validate_python({"action": "open_app", "name": "TextEdit", "reason": "r", "expect": "e"})
     assert action.name == "TextEdit"

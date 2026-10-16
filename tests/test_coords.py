@@ -7,7 +7,7 @@ RETINA = {"left": 0, "top": 0, "width": 1470, "height": 956}
 
 
 def click(x, y):
-    return ClickAction(action="click", x=x, y=y, reason="r")
+    return ClickAction(action="click", x=x, y=y, reason="r", expect="e")
 
 
 def test_screenshot_pixels_map_to_points_on_a_resized_retina_capture():
@@ -22,7 +22,7 @@ def test_second_monitor_offset_is_added():
 
 
 def test_drag_maps_both_ends():
-    drag = DragAction(action="drag", x1=0, y1=0, x2=1279, y2=831, reason="r")
+    drag = DragAction(action="drag", x1=0, y1=0, x2=1279, y2=831, reason="r", expect="e")
     moved = to_screen(drag, (1280, 832), RETINA)
     assert (moved.x1, moved.y1, moved.x2, moved.y2) == (0, 0, 1469, 955)
 

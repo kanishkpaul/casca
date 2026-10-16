@@ -1,5 +1,5 @@
 import pyautogui
-from casca.unicode_input import type_unicode
+from casca import native
 from casca.actions import (
     BaseAction, ClickAction, DoubleClickAction, RightClickAction,
     MoveMouseAction, DragAction, TypeAction, PressAction, HotkeyAction,
@@ -8,6 +8,8 @@ from casca.actions import (
 import subprocess
 import sys
 import time
+
+WINDOWS = sys.platform == "win32"
 
 KEY_ALIASES = {"cmd": "command", "win": "winleft", "super": "winleft"}
 # PyAutoGUI scrolls lines on macOS and wheel delta (120 per notch) on Windows.
@@ -32,18 +34,28 @@ class DesktopController:
         pyautogui.PAUSE = pause
 
     def move_mouse(self, x: int, y: int, duration: float = 0.1) -> None:
+        if WINDOWS:
+            return native.win_move(x, y)
         pyautogui.moveTo(x, y, duration=duration)
 
     def click(self, x: int, y: int) -> None:
+        if WINDOWS:
+            return native.win_click(x, y)
         pyautogui.click(x, y)
 
     def double_click(self, x: int, y: int) -> None:
+        if WINDOWS:
+            return native.win_click(x, y, count=2)
         pyautogui.doubleClick(x, y)
 
     def right_click(self, x: int, y: int) -> None:
+        if WINDOWS:
+            return native.win_click(x, y, "right")
         pyautogui.rightClick(x, y)
 
     def drag(self, x1: int, y1: int, x2: int, y2: int, duration: float = 0.3) -> None:
+        if WINDOWS:
+            return native.win_drag(x1, y1, x2, y2, duration)
         pyautogui.moveTo(x1, y1)
         pyautogui.dragTo(x2, y2, duration=duration)
 
@@ -51,7 +63,7 @@ class DesktopController:
         if text.isascii():
             pyautogui.typewrite(text, interval=interval)
         else:
-            type_unicode(text)
+            native.type_unicode(text)
 
     def press(self, key: str) -> None:
         pyautogui.press(valid_key(key))

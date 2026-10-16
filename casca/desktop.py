@@ -1,4 +1,5 @@
 import pyautogui
+from casca.unicode_input import type_unicode
 from casca.actions import (
     BaseAction, ClickAction, DoubleClickAction, RightClickAction,
     MoveMouseAction, DragAction, TypeAction, PressAction, HotkeyAction,
@@ -43,7 +44,10 @@ class DesktopController:
         pyautogui.dragTo(x2, y2, duration=duration)
 
     def type_text(self, text: str, interval: float = 0.01) -> None:
-        pyautogui.typewrite(text, interval=interval)
+        if text.isascii():
+            pyautogui.typewrite(text, interval=interval)
+        else:
+            type_unicode(text)
 
     def press(self, key: str) -> None:
         pyautogui.press(valid_key(key))

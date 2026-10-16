@@ -84,3 +84,24 @@ def type_unicode(text: str) -> None:
         _type_windows(text)
     else:
         raise ValueError("typing non-ASCII text is not supported on this platform yet")
+
+
+def win_foreground_elevated() -> bool:
+    """Windows drops input sent to an administrator window from a normal process (UIPI)."""
+    user32, kernel32, advapi32 = ctypes.windll.user32, ctypes.windll.kernel32, ctypes.windll.advapi32
+    if ctypes.windll.shell32.IsUserAnAdmin():
+        return False
+    user32.GetForegroundWindow.restype = kernel32.OpenProcess.restype = ctypes.c_void_p
+    pid = u32()
+    user32.GetWindowThreadProcessId(ctypes.c_void_p(user32.GetForegroundWindow()), ctypes.byref(pid))
+    process = kernel32.OpenProcess(0x1000, False, pid)  # PROCESS_QUERY_LIMITED_INFORMATION
+    token, elevated, size = ctypes.c_void_p(), u32(), u32()
+    try:
+        # A normal process is refused the token of an elevated one.
+        if not process or not advapi32.OpenProcessToken(ctypes.c_void_p(process), 0x8, ctypes.byref(token)):
+            return True
+        advapi32.GetTokenInformation(token, 20, ctypes.byref(elevated), 4, ctypes.byref(size))  # TokenElevation
+        return bool(elevated.value)
+    finally:
+        kernel32.CloseHandle(token)
+        kernel32.CloseHandle(ctypes.c_void_p(process))

@@ -81,6 +81,9 @@ class DesktopController:
             if not Quartz.CGPreflightPostEventAccess():
                 return ("Accessibility is not granted to this terminal. Enable it in System Settings > "
                         "Privacy & Security > Accessibility, then restart the terminal.")
+        if WINDOWS and native.win_foreground_elevated():
+            return ("An administrator window has focus, and Windows drops input sent to it. Close it, "
+                    "or run Casca as administrator.")
         return None
 
     def open_app(self, name: str) -> None:

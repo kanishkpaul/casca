@@ -96,7 +96,9 @@ class CascaAgent:
             def log(action, safety, execution, raw=None):
                 self.logger.log_step(step, task, screenshot, raw, action, safety, execution)
 
-            if step == 0 and (problem := self.screen.capture_problem()):
+            # Checked every step: a frame that turns black mid-run can be the Windows UAC prompt,
+            # which sits on a secure desktop Casca cannot capture or click.
+            if problem := self.screen.capture_problem():
                 console.print(f"[bold red]Cannot see the screen:[/bold red] {problem}")
                 log(None, None, {"status": "blank_screen", "error": problem})
                 return "blank_screen"
@@ -144,6 +146,10 @@ class CascaAgent:
                 execution_log = {"status": "skipped"}
             else:
                 console.print("[dim]Executing...[/dim]")
+                if problem := self.desktop.input_problem():
+                    console.print(f"[bold red]Cannot send input:[/bold red] {problem}")
+                    log(action.model_dump(), safety_log, {"status": "no_input", "error": problem}, raw_output)
+                    return "no_input"
                 try:
                     execution_log = self.desktop.execute_action(to_screen(action, (width, height), monitor))
                 except FailSafeException:

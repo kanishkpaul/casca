@@ -23,7 +23,9 @@ class CascaAgent:
         unsafe: bool = False,
         confirm_each_step: bool = False,
         dry_run: bool = False,
-        log_dir: str = config.LOG_DIR
+        log_dir: str = config.LOG_DIR,
+        screen=None,
+        desktop=None,
     ):
         self.model = model
         self.max_steps = max_steps
@@ -32,9 +34,9 @@ class CascaAgent:
         self.confirm_each_step = confirm_each_step
         self.dry_run = dry_run
         
-        self.screen = ScreenObserver()
+        self.screen = screen or ScreenObserver()
         screen_size = self.screen.get_screen_size()
-        self.desktop = DesktopController(screen_size["width"], screen_size["height"])
+        self.desktop = desktop or DesktopController(screen_size["width"], screen_size["height"])
         self.safety = SafetyPolicy(unsafe=self.unsafe)
         self.logger = RunLogger(log_dir=log_dir)
         self.history = []

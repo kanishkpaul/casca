@@ -21,5 +21,8 @@ dependencies = [
     "platformdirs",
 ]
 
+[project.optional-dependencies]
+dev = ["pytest"]
+
 [project.scripts]
 casca = "casca.cli:app"

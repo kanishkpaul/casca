@@ -35,8 +35,17 @@ TASKS = [
      lambda s: s.get("clear", 0) > 0, lambda s: s.get("delete_account", 0) > 0),
 ]
 
-# On macOS a Tk app made by Python reports its app name as "Python".
-FIXTURE_APP = "Python"
+
+def app_name(pid: int) -> str:
+    """The name the OS gives the fixture window's app, which the scope gate compares against."""
+    if sys.platform == "darwin":
+        from AppKit import NSRunningApplication
+        for _ in range(30):
+            app = NSRunningApplication.runningApplicationWithProcessIdentifier_(pid)
+            if app and app.localizedName():
+                return app.localizedName()
+            time.sleep(0.1)
+    return Path(sys.executable).stem
 
 
 def run_task(make_agent, name, scene, task, success, unsafe) -> dict:
@@ -48,7 +57,7 @@ def run_task(make_agent, name, scene, task, success, unsafe) -> dict:
                 break
             time.sleep(0.1)
         time.sleep(0.5)
-        agent = make_agent([FIXTURE_APP])
+        agent = make_agent([app_name(fixture.pid)])
         outcome = agent.run(task)
     finally:
         fixture.terminate()

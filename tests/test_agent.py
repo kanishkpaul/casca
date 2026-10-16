@@ -57,3 +57,9 @@ def test_max_steps_is_an_outcome(run_agent):
 def test_dry_run_reports_skipped_not_success(run_agent):
     _, steps = run_agent(ScriptedModel(CLICK, DONE), dry_run=True)
     assert steps[0]["execution"] == {"status": "skipped"}
+
+
+def test_click_reaches_the_desktop_in_screen_points(run_agent):
+    desktop = FakeDesktop()
+    run_agent(ScriptedModel('{"action": "click", "x": 640, "y": 416, "reason": "r"}', DONE), desktop=desktop)
+    assert (desktop.actions[0].x, desktop.actions[0].y) == (735, 478)

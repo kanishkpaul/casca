@@ -9,8 +9,9 @@ from casca.replay import load_run
 
 
 class FakeScreen:
-    def __init__(self, width=1470, height=956, color="white"):
-        self.size = {"width": width, "height": height}
+    def __init__(self, image_size=(1280, 832), monitor=None, color="white"):
+        self.image_size = image_size
+        self.size = monitor or {"left": 0, "top": 0, "width": 1470, "height": 956}
         self.color = color
 
     def get_screen_size(self):
@@ -18,7 +19,7 @@ class FakeScreen:
 
     def screenshot(self, path=None):
         buf = io.BytesIO()
-        Image.new("RGB", (64, 40), self.color).save(buf, "PNG")
+        Image.new("RGB", self.image_size, self.color).save(buf, "PNG")
         return buf.getvalue()
 
 

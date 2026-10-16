@@ -17,10 +17,7 @@ class ScreenObserver:
             
     def get_screen_size(self) -> dict:
         monitor = self.sct.monitors[self.monitor_index]
-        return {
-            "width": monitor["width"],
-            "height": monitor["height"]
-        }
+        return {k: monitor[k] for k in ("left", "top", "width", "height")}
 
     def _resize_if_needed(self, img: Image.Image) -> Image.Image:
         if img.width > self.max_width:
@@ -38,6 +35,7 @@ class ScreenObserver:
             img.save(path, format="PNG")
             
         img = self._resize_if_needed(img)
+        self.image_size = img.size
         img_byte_arr = io.BytesIO()
         img.save(img_byte_arr, format='PNG')
         return img_byte_arr.getvalue()

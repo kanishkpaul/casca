@@ -25,11 +25,9 @@ Rules:
 9. When the task is complete, return done with a concise answer.
 10. Output valid JSON only. No markdown. No commentary.
 
-Screen coordinate system:
-- x starts at 0 on the left
-- y starts at 0 at the top
-- x must be between 0 and screen width
-- y must be between 0 and screen height
+Coordinate system: pixels of the screenshot you are shown.
+- x starts at 0 on the left, y at 0 at the top
+- x must be below the screenshot width, y below its height
 
 Examples:
 

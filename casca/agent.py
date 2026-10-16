@@ -13,6 +13,7 @@ from casca.safety import SafetyPolicy
 from casca.models.base import VisionActionModel
 from casca.actions import ActionType
 from casca.config import config
+from casca.coords import to_screen
 
 console = Console()
 
@@ -82,17 +83,18 @@ class CascaAgent:
         return outcome
 
     def _loop(self, task: str) -> str:
-        screen_size = self.screen.get_screen_size()
+        monitor = self.screen.get_screen_size()
 
         for step in range(self.max_steps):
             console.print(f"\n[cyan]=== Step {step} ===[/cyan]")
             screenshot = self.screen.screenshot()
+            width, height = self.screen.image_size
 
             def log(action, safety, execution, raw=None):
                 self.logger.log_step(step, task, screenshot, raw, action, safety, execution)
 
             console.print("[dim]Thinking...[/dim]")
-            result = self.model.propose_action(task, screenshot, step, self.history, screen_size)
+            result = self.model.propose_action(task, screenshot, step, self.history, {"width": width, "height": height})
 
             if "error" in result:
                 console.print(f"[bold red]Model error:[/bold red] {escape(str(result['error']))}")
@@ -133,7 +135,7 @@ class CascaAgent:
             else:
                 console.print("[dim]Executing...[/dim]")
                 try:
-                    execution_log = self.desktop.execute_action(action)
+                    execution_log = self.desktop.execute_action(to_screen(action, (width, height), monitor))
                 except FailSafeException:
                     log(action.model_dump(), safety_log, {"status": "interrupted"}, raw_output)
                     raise

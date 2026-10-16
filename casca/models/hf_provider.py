@@ -37,7 +37,7 @@ class HFVisionProvider(VisionActionModel):
             history_str += f"- Step {h['step']}: Action: {h['action']}, Result: {h['execution'].get('status')}\n"
             
         user_prompt = f"""Task: {task}
-Screen size: width={screen['width']}, height={screen['height']}
+Screenshot size: width={screen['width']}, height={screen['height']}
 Step index: {step_index}
 Recent history:
 {history_str if history_str else "None"}

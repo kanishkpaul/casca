@@ -13,32 +13,21 @@ class DesktopController:
         pyautogui.FAILSAFE = True
         pyautogui.PAUSE = pause
 
-    def _bound_coords(self, x: int, y: int) -> tuple[int, int]:
-        bx = max(0, min(x, self.screen_width - 1))
-        by = max(0, min(y, self.screen_height - 1))
-        return bx, by
-
     def move_mouse(self, x: int, y: int, duration: float = 0.1) -> None:
-        bx, by = self._bound_coords(x, y)
-        pyautogui.moveTo(bx, by, duration=duration)
+        pyautogui.moveTo(x, y, duration=duration)
 
     def click(self, x: int, y: int) -> None:
-        bx, by = self._bound_coords(x, y)
-        pyautogui.click(bx, by)
+        pyautogui.click(x, y)
 
     def double_click(self, x: int, y: int) -> None:
-        bx, by = self._bound_coords(x, y)
-        pyautogui.doubleClick(bx, by)
+        pyautogui.doubleClick(x, y)
 
     def right_click(self, x: int, y: int) -> None:
-        bx, by = self._bound_coords(x, y)
-        pyautogui.rightClick(bx, by)
+        pyautogui.rightClick(x, y)
 
     def drag(self, x1: int, y1: int, x2: int, y2: int, duration: float = 0.3) -> None:
-        bx1, by1 = self._bound_coords(x1, y1)
-        bx2, by2 = self._bound_coords(x2, y2)
-        pyautogui.moveTo(bx1, by1)
-        pyautogui.dragTo(bx2, by2, duration=duration)
+        pyautogui.moveTo(x1, y1)
+        pyautogui.dragTo(x2, y2, duration=duration)
 
     def type_text(self, text: str, interval: float = 0.01) -> None:
         pyautogui.typewrite(text, interval=interval)

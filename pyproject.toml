@@ -9,20 +9,21 @@ description = "A model-agnostic, screenshot-based desktop-use scaffold for study
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "typer",
-    "rich",
-    "pydantic",
-    "python-dotenv",
-    "httpx",
-    "pillow",
-    "mss",
-    "pyautogui",
-    "flask",
-    "platformdirs",
+    "typer>=0.27,<1",
+    "rich>=15,<16",
+    "pydantic>=2.14,<3",
+    "python-dotenv>=1.2,<2",
+    "httpx>=0.28,<1",
+    "pillow>=12.3,<13",
+    "mss>=10.2,<11",
+    "pyautogui>=0.9.54,<0.10",
+    "pyobjc-framework-Quartz>=12.2,<13; sys_platform == 'darwin'",
+    "flask>=3.1,<4",
+    "platformdirs>=4.13,<5",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest"]
+dev = ["pytest>=9.1,<10"]
 
 [project.scripts]
 casca = "casca.cli:app"

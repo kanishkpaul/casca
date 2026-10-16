@@ -11,7 +11,7 @@ class ScreenObserver:
     def __init__(self, monitor_index: int = config.MONITOR_INDEX, max_width: int = config.SCREENSHOT_MAX_WIDTH):
         self.monitor_index = monitor_index
         self.max_width = max_width
-        self.sct = mss.mss()
+        self.sct = mss.MSS()
         monitors = self.sct.monitors
         # Index 0 is every monitor combined, which has no single scale or origin to map clicks to.
         if not 1 <= self.monitor_index < len(monitors):

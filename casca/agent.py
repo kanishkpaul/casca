@@ -130,7 +130,7 @@ class CascaAgent:
                 return "blocked"
 
             if self.confirm_each_step and not self.dry_run:
-                confirm = console.input("[bold yellow]Execute this action? [y/N]: [/bold yellow]")
+                confirm = console.input("[bold yellow]Execute this action? \\[y/N]: [/bold yellow]")
                 if confirm.lower() != 'y':
                     console.print("[yellow]Action aborted by user. Stopping.[/yellow]")
                     log(action.model_dump(), safety_log, {"status": "aborted"}, raw_output)

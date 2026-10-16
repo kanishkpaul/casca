@@ -18,6 +18,9 @@ class Config:
     BASE_URL = os.getenv("CASCA_BASE_URL", "https://router.huggingface.co/v1")
     MODEL = os.getenv("CASCA_MODEL") or os.getenv("HF_MODEL_ID", "google/gemma-4-31b-it")
     API_KEY = os.getenv("CASCA_API_KEY") or os.getenv("HF_API_TOKEN")
+    # How the model names points: "image_px" (pixels of the screenshot) or "norm1000"
+    # (0 to 1000 on each axis, as Qwen3-VL does).
+    COORDS = os.getenv("CASCA_COORDS", "image_px")
     
     MAX_STEPS = _number("CASCA_MAX_STEPS", "20")
     MONITOR_INDEX = _number("CASCA_MONITOR", "1")

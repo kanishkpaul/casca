@@ -16,6 +16,7 @@ def run(
     provider: str = typer.Option("api", "--provider", help="'api' for any OpenAI-compatible endpoint, or 'mock'."),
     base_url: str = typer.Option(config.BASE_URL, "--base-url", help="Endpoint, e.g. http://localhost:11434/v1 for Ollama."),
     model_name: str = typer.Option(config.MODEL, "--model", help="Model name at that endpoint."),
+    coords: str = typer.Option(config.COORDS, "--coords", help="'image_px', or 'norm1000' for models such as Qwen3-VL."),
     unsafe: bool = typer.Option(False, "--unsafe", help="Allow potentially dangerous actions."),
     confirm_each_step: bool = typer.Option(False, "--confirm-each-step", help="Ask for confirmation before each action."),
     dry_run: bool = typer.Option(False, "--dry-run", help="Propose actions without executing them."),
@@ -36,6 +37,7 @@ def run(
         unsafe=unsafe,
         confirm_each_step=confirm_each_step,
         dry_run=dry_run,
+        coords=coords,
         log_dir=log_dir
     )
     

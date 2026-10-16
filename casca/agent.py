@@ -28,6 +28,7 @@ class CascaAgent:
         unsafe: bool = False,
         confirm_each_step: bool = False,
         dry_run: bool = False,
+        coords: str = config.COORDS,
         log_dir: str = config.LOG_DIR,
         screen=None,
         desktop=None,
@@ -38,6 +39,7 @@ class CascaAgent:
         self.unsafe = unsafe
         self.confirm_each_step = confirm_each_step
         self.dry_run = dry_run
+        self.coords = coords
         
         self.screen = screen or ScreenObserver()
         screen_size = self.screen.get_screen_size()
@@ -86,7 +88,7 @@ class CascaAgent:
         for step in range(self.max_steps):
             console.print(f"\n[cyan]=== Step {step} ===[/cyan]")
             screenshot = self.screen.screenshot()
-            width, height = self.screen.image_size
+            width, height = (1000, 1000) if self.coords == "norm1000" else self.screen.image_size
 
             def log(action, safety, execution, raw=None):
                 self.logger.log_step(step, task, screenshot, raw, action, safety, execution)

@@ -94,3 +94,9 @@ def test_blank_screen_stops_before_the_model_is_asked(tmp_path):
     model = ScriptedModel(DONE)
     outcome = CascaAgent(model, screen=FakeScreen(color="black"), desktop=FakeDesktop(), log_dir=str(tmp_path)).run("t")
     assert outcome == "blank_screen" and model.histories == []
+
+
+def test_norm1000_points_map_to_screen_points(run_agent):
+    desktop, model = FakeDesktop(), ScriptedModel('{"action": "click", "x": 500, "y": 500, "reason": "r"}', DONE)
+    run_agent(model, desktop=desktop, coords="norm1000")
+    assert (desktop.actions[0].x, desktop.actions[0].y) == (735, 478)

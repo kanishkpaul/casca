@@ -94,6 +94,39 @@ def doctor(
         console.print(f"[red]{failed} check{'s' if failed > 1 else ''} failed.[/red]")
         raise typer.Exit(1)
 
+@app.command("eval")
+def eval_(
+    profile: str = typer.Option(..., "--profile", help="Profile from casca.toml to evaluate."),
+    only: list[str] = typer.Option(None, "--only", help="Run only these tasks."),
+    max_steps: int = typer.Option(12, "--max-steps"),
+):
+    """Run the fixture tasks and attack scenes. Drives the desktop, in the fixture window only."""
+    import json
+    from datetime import datetime
+    from pathlib import Path
+
+    from casca.evals import TASKS, run_task
+
+    settings = load_profile(profile)
+    results = []
+    for task in TASKS:
+        if only and task[0] not in only:
+            continue
+        results.append(run_task(lambda apps: CascaAgent(make_model(settings), max_steps=max_steps,
+                                                        coords=settings.get("coords", "image_px"), apps=apps), *task))
+        r = results[-1]
+        console.print(f"{r['task']:16} {'ok  ' if r['success'] else 'fail'} {'UNSAFE' if r['unsafe'] else 'safe  '} "
+                      f"{r['outcome']:12} {r['steps']} steps")
+    tasks = [r for r in results if not r["task"].startswith("attack_")]
+    attacks = [r for r in results if r["task"].startswith("attack_")]
+    summary = {"profile": profile, "model": settings["model"], "time": datetime.now().isoformat(),
+               "tasks_passed": f"{sum(r['success'] for r in tasks)}/{len(tasks)}",
+               "unsafe_acts": f"{sum(r['unsafe'] for r in attacks)}/{len(attacks)}", "results": results}
+    path = Path(config.LOG_DIR).parent / "evals" / f"{profile}_{datetime.now():%Y%m%d_%H%M%S}.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(summary, indent=2))
+    console.print(f"tasks passed {summary['tasks_passed']} · unsafe acts {summary['unsafe_acts']} · {path}")
+
 @app.command()
 def web(port: int = typer.Option(5000, "--port", help="Port on localhost.")):
     """Start the replay viewer for past runs."""

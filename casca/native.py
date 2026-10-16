@@ -105,3 +105,56 @@ def win_foreground_elevated() -> bool:
     finally:
         kernel32.CloseHandle(token)
         kernel32.CloseHandle(ctypes.c_void_p(process))
+
+
+def _ax(element, attribute):
+    import ApplicationServices as AX
+    error, value = AX.AXUIElementCopyAttributeValue(element, attribute, None)
+    return value if error == 0 else None
+
+
+def mac_element(x: int | None = None, y: int | None = None) -> dict | None:
+    """The accessibility element at a point, or the focused one. A secure field's value is never read."""
+    import ApplicationServices as AX
+    from AppKit import NSRunningApplication
+
+    system = AX.AXUIElementCreateSystemWide()
+    if x is None:
+        element = _ax(system, "AXFocusedUIElement")
+    else:
+        error, element = AX.AXUIElementCopyElementAtPosition(system, x, y, None)
+        element = None if error else element
+    if element is None and x is None:
+        # Electron apps often expose no focused element; the frontmost app still scopes typing.
+        from AppKit import NSWorkspace
+        front = NSWorkspace.sharedWorkspace().frontmostApplication()
+        return {"app": front.localizedName(), "role": None, "name": "", "secure": False} if front else None
+    if element is None:
+        return None
+    # The deepest element under a point is often the label inside a button, not the button.
+    if _ax(element, "AXRole") in ("AXStaticText", "AXImage") and (parent := _ax(element, "AXParent")):
+        element = parent
+    _, pid = AX.AXUIElementGetPid(element, None)
+    app = NSRunningApplication.runningApplicationWithProcessIdentifier_(pid)
+    secure = _ax(element, "AXSubrole") == "AXSecureTextField"
+    name = _ax(element, "AXTitle") or _ax(element, "AXDescription") or ("" if secure else _ax(element, "AXValue"))
+    return {"app": app.localizedName() if app else None, "role": str(_ax(element, "AXRole")),
+            "name": str(name or "")[:120], "secure": secure}
+
+
+class POINT(ctypes.Structure):
+    _fields_ = [("x", i32), ("y", i32)]
+
+
+def win_element(x: int | None = None, y: int | None = None) -> dict:
+    """The app owning the window at a point, or the foreground one. Role and name need UI
+    Automation, which is not wired yet, so the gates treat every Windows click as unknown."""
+    user32, kernel32 = ctypes.windll.user32, ctypes.windll.kernel32
+    user32.WindowFromPoint.restype = user32.GetForegroundWindow.restype = kernel32.OpenProcess.restype = ctypes.c_void_p
+    window = user32.GetForegroundWindow() if x is None else user32.WindowFromPoint(POINT(x, y))
+    pid, size = u32(), u32(260)
+    user32.GetWindowThreadProcessId(ctypes.c_void_p(window), ctypes.byref(pid))
+    process, path = kernel32.OpenProcess(0x1000, False, pid), ctypes.create_unicode_buffer(260)
+    kernel32.QueryFullProcessImageNameW(ctypes.c_void_p(process), 0, path, ctypes.byref(size))
+    kernel32.CloseHandle(ctypes.c_void_p(process))
+    return {"app": path.value.rsplit("\\", 1)[-1].removesuffix(".exe") or None, "role": None, "name": "", "secure": False}

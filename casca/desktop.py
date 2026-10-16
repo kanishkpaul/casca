@@ -86,6 +86,12 @@ class DesktopController:
                     "or run Casca as administrator.")
         return None
 
+    def element_at(self, x: int, y: int) -> dict | None:
+        return native.mac_element(x, y) if sys.platform == "darwin" else native.win_element(x, y) if WINDOWS else None
+
+    def focused_element(self) -> dict | None:
+        return native.mac_element() if sys.platform == "darwin" else native.win_element() if WINDOWS else None
+
     def open_app(self, name: str) -> None:
         command = ["open", "-a", name] if sys.platform == "darwin" else ["cmd", "/c", "start", "", name]
         subprocess.run(command, check=True, capture_output=True, timeout=10)

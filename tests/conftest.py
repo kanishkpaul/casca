@@ -27,8 +27,15 @@ class FakeScreen:
 
 
 class FakeDesktop:
-    def __init__(self, fail=None, problem=None):
+    def __init__(self, fail=None, problem=None, element=None):
         self.actions, self.fail, self.problem = [], fail, problem
+        self.element = element or {"app": "Fixture", "role": "AXButton", "name": "OK", "secure": False}
+
+    def element_at(self, x, y):
+        return self.element
+
+    def focused_element(self):
+        return self.element
 
     def input_problem(self):
         return self.problem

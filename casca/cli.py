@@ -20,6 +20,7 @@ def run(
     model_name: str = typer.Option(config.MODEL, "--model", help="Model name at that endpoint."),
     profile: str = typer.Option(None, "--profile", help="A profile from casca.toml; overrides --base-url, --model and --coords."),
     coords: str = typer.Option(config.COORDS, "--coords", help="'image_px', or 'norm1000' for models such as Qwen3-VL."),
+    apps: list[str] = typer.Option(None, "--app", help="An app Casca may act in. Repeat for more. Default: any."),
     unsafe: bool = typer.Option(False, "--unsafe", help="Allow potentially dangerous actions."),
     confirm_each_step: bool = typer.Option(False, "--confirm-each-step", help="Ask for confirmation before each action."),
     dry_run: bool = typer.Option(False, "--dry-run", help="Propose actions without executing them."),
@@ -44,6 +45,7 @@ def run(
         confirm_each_step=confirm_each_step,
         dry_run=dry_run,
         coords=coords,
+        apps=apps,
         log_dir=log_dir
     )
     

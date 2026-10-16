@@ -127,3 +127,11 @@ def test_unchanged_screen_is_recorded(run_agent):
 def test_time_budget_stops_the_run(run_agent):
     meta, _ = run_agent(ScriptedModel(CLICK, DONE), max_seconds=-1)
     assert meta["outcome"] == "time_budget"
+
+
+def test_confirm_without_a_terminal_is_a_refused_step(run_agent):
+    send = {"app": "Mail", "role": "AXButton", "name": "Send", "secure": False}
+    desktop = FakeDesktop(element=send)
+    meta, steps = run_agent(ScriptedModel(CLICK, DONE), desktop=desktop)
+    assert steps[0]["execution"]["status"] == "refused" and desktop.actions[-1].action == "done"
+    assert steps[0]["safety"]["gate"] == "confirm"

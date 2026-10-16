@@ -1,4 +1,5 @@
 import json
+import sys
 import time
 from rich.console import Console
 from rich.markup import escape
@@ -13,6 +14,7 @@ from casca.safety import SafetyPolicy
 from casca.models.base import VisionActionModel
 from casca.actions import ActionType
 from casca.config import config
+from casca import gates
 from casca.coords import POINT_FIELDS, to_screen
 
 console = Console()
@@ -37,6 +39,7 @@ class CascaAgent:
         confirm_each_step: bool = False,
         dry_run: bool = False,
         coords: str = config.COORDS,
+        apps: list[str] | None = None,
         log_dir: str = config.LOG_DIR,
         screen=None,
         desktop=None,
@@ -49,6 +52,7 @@ class CascaAgent:
         self.confirm_each_step = confirm_each_step
         self.dry_run = dry_run
         self.coords = coords
+        self.apps = apps or []
         
         self.screen = screen or ScreenObserver()
         screen_size = self.screen.get_screen_size()
@@ -70,6 +74,27 @@ class CascaAgent:
             return None, f"invalid JSON: {e}"
         except ValidationError as e:
             return None, "; ".join(f"{'.'.join(map(str, err['loc']))}: {err['msg']}" for err in e.errors())
+
+    def _gate(self, action, size, monitor) -> tuple[str, str | None, dict | None]:
+        target = focused = None
+        if action.action in gates.POINTER:
+            try:
+                mapped = to_screen(action, size, monitor)
+            except ValueError:
+                return "allow", None, None  # execution reports the point as outside the screenshot
+            target = self.desktop.element_at(*((mapped.x, mapped.y) if hasattr(mapped, "x") else (mapped.x1, mapped.y1)))
+        elif action.action in gates.KEYBOARD:
+            focused = self.desktop.focused_element()
+        decision, reason = gates.check(action, target, focused, self.apps)
+        return decision, reason, target or focused
+
+    def _approve(self, action, reason: str) -> bool:
+        """Asks the user. Deny is the default, and a run with no terminal attached always denies."""
+        if not sys.stdin.isatty():
+            return False
+        console.print(f"[yellow]╭─ approve? ─[/yellow]\n[yellow]│[/yellow] {action.action} {escape(action.reason)}\n"
+                      f"[yellow]│[/yellow] [dim]{escape(reason)}[/dim]\n[yellow]╰─ \\[y] approve once · \\[n/enter] deny ─[/yellow]")
+        return console.input("> ").strip().lower() == "y"
 
     def _settle(self, before: bytes, every: float = 0.15) -> dict:
         """Waits until the screen has changed and stopped changing, instead of a fixed sleep."""
@@ -158,6 +183,11 @@ class CascaAgent:
                 log(action.model_dump(), safety_log, {"status": "blocked"}, raw_output)
                 return "blocked"
 
+            decision, gate_reason, element = self._gate(action, (width, height), monitor)
+            safety_log.update(gate=decision, gate_reason=gate_reason, element=element)
+            refused = decision == "refuse" or (decision == "confirm" and not self.dry_run
+                                               and not self._approve(action, gate_reason))
+
             if self.confirm_each_step and not self.dry_run:
                 confirm = console.input("[bold yellow]Execute this action? \\[y/N]: [/bold yellow]")
                 if confirm.lower() != 'y':
@@ -165,7 +195,10 @@ class CascaAgent:
                     log(action.model_dump(), safety_log, {"status": "aborted"}, raw_output)
                     return "aborted"
 
-            if self.dry_run:
+            if refused:
+                console.print(f"[bold yellow]Not done:[/bold yellow] {escape(gate_reason)}")
+                execution_log = {"status": "refused", "error": gate_reason}
+            elif self.dry_run:
                 console.print("[yellow][DRY RUN] Skipping execution[/yellow]")
                 execution_log = {"status": "skipped"}
             else:

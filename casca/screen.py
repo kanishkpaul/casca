@@ -43,6 +43,7 @@ class ScreenObserver:
         monitor = self.sct.monitors[self.monitor_index]
         sct_img = self.sct.grab(monitor)
         img = Image.frombytes("RGB", sct_img.size, sct_img.bgra, "raw", "BGRX")
+        self.capture_size = sct_img.size
         
         if path:
             img.save(path, format="PNG")

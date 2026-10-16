@@ -19,7 +19,7 @@ def test_model_text_with_markup_does_not_crash(run_agent):
 
 
 def test_null_model_content_stops_cleanly(run_agent):
-    run_agent(ScriptedModel({"raw_output": None}))
+    run_agent(ScriptedModel(*[{"raw_output": None}] * 3))
 
 
 DONE = '{"action": "done", "answer": "ok", "reason": "r"}'
@@ -28,7 +28,6 @@ CLICK = '{"action": "click", "x": 10, "y": 10, "reason": "r"}'
 
 @pytest.mark.parametrize("reply, outcome", [
     ({"error": "401"}, "model_error"),
-    ("not json", "parse_error"),
     (DONE, "done"),
 ])
 def test_every_ending_is_logged_with_an_outcome(run_agent, reply, outcome):
@@ -63,3 +62,19 @@ def test_click_reaches_the_desktop_in_screen_points(run_agent):
     desktop = FakeDesktop()
     run_agent(ScriptedModel('{"action": "click", "x": 640, "y": 416, "reason": "r"}', DONE), desktop=desktop)
     assert (desktop.actions[0].x, desktop.actions[0].y) == (735, 478)
+
+
+def test_malformed_reply_is_retried_with_the_error(run_agent):
+    model = ScriptedModel('{"action": "click", "x": "left", "reason": "r"}', DONE)
+    run_agent(model)
+    assert "click.x" in model.histories[1][-1]["execution"]["error"]
+
+
+def test_three_bad_replies_end_with_parse_error(run_agent):
+    meta, steps = run_agent(ScriptedModel("no", "still no", '{"a": 1} {"b": 2}'))
+    assert meta["outcome"] == "parse_error" and steps[0]["execution"]["status"] == "parse_error"
+
+
+def test_first_of_two_json_objects_is_used(run_agent):
+    meta, _ = run_agent(ScriptedModel(DONE + ' {"extra": true}'))
+    assert meta["outcome"] == "done"

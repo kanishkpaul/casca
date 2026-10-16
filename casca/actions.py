@@ -62,7 +62,7 @@ class FailAction(BaseAction):
     action: Literal["fail"]
     reason: str
 
-ActionType = (
+ActionType = Annotated[
     ClickAction
     | DoubleClickAction
     | RightClickAction
@@ -74,5 +74,6 @@ ActionType = (
     | ScrollAction
     | WaitAction
     | DoneAction
-    | FailAction
-)
+    | FailAction,
+    Field(discriminator="action"),
+]

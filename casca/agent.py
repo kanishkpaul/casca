@@ -16,6 +16,8 @@ from casca.config import config
 from casca.coords import to_screen
 
 console = Console()
+ACTIONS = TypeAdapter(ActionType)
+PARSE_ATTEMPTS = 3
 
 class CascaAgent:
     def __init__(
@@ -44,23 +46,19 @@ class CascaAgent:
         self.log_dir = log_dir
         self.history = []
 
-    def parse_action(self, raw_output: str) -> ActionType | None:
+    def parse_action(self, raw_output: str | None) -> tuple[ActionType | None, str | None]:
+        """Reads the first JSON object in the reply. Returns the action, or None and why not."""
+        text = raw_output or ""
+        start = text.find("{")
+        if start == -1:
+            return None, "the reply has no JSON object"
         try:
-            # Simple extraction: find the first { and last }
-            raw_output = raw_output or ""
-            start = raw_output.find("{")
-            end = raw_output.rfind("}")
-            
-            if start == -1 or end == -1:
-                return None
-                
-            json_str = raw_output[start:end+1]
-            data = json.loads(json_str)
-            adapter = TypeAdapter(ActionType)
-            return adapter.validate_python(data)
-        except (json.JSONDecodeError, ValidationError) as e:
-            console.print(f"[red]Error parsing action:[/red] {escape(str(e))}")
-            return None
+            data, _ = json.JSONDecoder().raw_decode(text, start)
+            return ACTIONS.validate_python(data), None
+        except json.JSONDecodeError as e:
+            return None, f"invalid JSON: {e}"
+        except ValidationError as e:
+            return None, "; ".join(f"{'.'.join(map(str, err['loc']))}: {err['msg']}" for err in e.errors())
 
     def run(self, task: str) -> str:
         console.print(Panel(f"Starting Casca Agent\nTask: [bold]{escape(task)}[/bold]\nMax steps: {self.max_steps}"))
@@ -94,20 +92,22 @@ class CascaAgent:
                 self.logger.log_step(step, task, screenshot, raw, action, safety, execution)
 
             console.print("[dim]Thinking...[/dim]")
-            result = self.model.propose_action(task, screenshot, step, self.history, {"width": width, "height": height})
-
-            if "error" in result:
-                console.print(f"[bold red]Model error:[/bold red] {escape(str(result['error']))}")
-                log(None, None, {"status": "model_error", "error": result["error"]})
-                return "model_error"
-
-            raw_output = result["raw_output"]
-            action = self.parse_action(raw_output)
-
-            if not action:
-                console.print("[bold red]Failed to parse action. Stopping.[/bold red]")
+            feedback = []
+            for _ in range(PARSE_ATTEMPTS):
+                result = self.model.propose_action(task, screenshot, step, self.history + feedback, {"width": width, "height": height})
+                if "error" in result:
+                    console.print(f"[bold red]Model error:[/bold red] {escape(str(result['error']))}")
+                    log(None, None, {"status": "model_error", "error": result["error"]})
+                    return "model_error"
+                raw_output = result["raw_output"]
+                action, problem = self.parse_action(raw_output)
+                if action:
+                    break
+                console.print(f"[red]Invalid reply:[/red] {escape(problem)}")
+                feedback = [{"step": step, "action": "invalid reply", "execution": {"status": "error", "error": problem}}]
+            else:
                 console.print(f"Raw output:\n{escape(str(raw_output))}")
-                log(None, None, {"status": "parse_error"}, raw_output)
+                log(None, None, {"status": "parse_error", "error": problem}, raw_output)
                 return "parse_error"
 
             console.print(f"[green]Proposed action:[/green] {action.action}")

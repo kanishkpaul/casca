@@ -39,8 +39,10 @@ class ScriptedModel(VisionActionModel):
 
     def __init__(self, *replies):
         self.replies = list(replies)
+        self.histories = []
 
     def propose_action(self, task, screenshot_bytes, step_index, history, screen):
+        self.histories.append(history)
         reply = self.replies.pop(0)
         return reply if isinstance(reply, dict) else {"raw_output": reply}
 

@@ -1,7 +1,7 @@
 """Profiles name one model each in casca.toml, so a model's quirks live in data, not code:
 
     [profiles.local-qwen]
-    adapter = "openai_compat"          # or "anthropic"
+    adapter = "openai_compat"          # or "anthropic" (pip install "casca[anthropic]")
     base_url = "http://127.0.0.1:8080/v1"
     model = "qwen3-vl-8b"
     key = "none"                       # or "env:OPENAI_API_KEY", or "keychain:casca/openrouter"
@@ -38,9 +38,12 @@ def resolve_key(ref: str | None) -> str | None:
 
 
 def make_model(profile: dict):
-    from casca.models.openai_compat import OpenAICompatProvider
-    adapters = {"openai_compat": OpenAICompatProvider}
-    adapter = adapters.get(profile.get("adapter", "openai_compat"))
-    if adapter is None:
-        raise ValueError(f"unknown adapter {profile['adapter']!r}; known: {', '.join(adapters)}")
-    return adapter(profile["base_url"], profile["model"], resolve_key(profile.get("key")))
+    key = resolve_key(profile.get("key"))
+    adapter = profile.get("adapter", "openai_compat")
+    if adapter == "openai_compat":
+        from casca.models.openai_compat import OpenAICompatProvider
+        return OpenAICompatProvider(profile["base_url"], profile["model"], key)
+    if adapter == "anthropic":
+        from casca.models.anthropic_native import AnthropicProvider
+        return AnthropicProvider(profile.get("base_url"), profile["model"], key, profile.get("effort"))
+    raise ValueError(f"unknown adapter {adapter!r}; known: openai_compat, anthropic")

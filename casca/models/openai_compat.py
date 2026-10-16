@@ -1,11 +1,10 @@
-import json
 import time
 
 import httpx
 
 from casca.config import config
 from casca.models.base import VisionActionModel
-from casca.prompts import SYSTEM_PROMPT
+from casca.prompts import SYSTEM_PROMPT, step_prompt
 from casca.utils import encode_image_base64
 
 
@@ -20,9 +19,7 @@ class OpenAICompatProvider(VisionActionModel):
         self.headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
 
     def propose_action(self, task, screenshot_bytes, step_index, history, screen) -> dict:
-        recent = "\n".join(f"- Step {h['step']}: {json.dumps(h['action'])} -> {json.dumps(h['execution'])}" for h in history[-8:])
-        prompt = (f"Task: {task}\nScreenshot size: width={screen['width']}, height={screen['height']}\n"
-                  f"Step index: {step_index}\nRecent history:\n{recent or 'None'}\n\nReply with the next action as JSON.")
+        prompt = step_prompt(task, step_index, history, screen)
         payload = {
             "model": self.model,
             "max_tokens": 512,

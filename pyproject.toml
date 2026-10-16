@@ -25,6 +25,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=9.1,<10"]
+anthropic = ["anthropic>=1.15,<2"]
 
 [project.scripts]
 casca = "casca.cli:app"

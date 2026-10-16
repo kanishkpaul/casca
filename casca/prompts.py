@@ -1,3 +1,4 @@
+import json
 import sys
 
 OS_NAME, MODIFIER = {"darwin": ("macOS", "command"), "win32": ("Windows", "ctrl")}.get(sys.platform, ("Linux", "ctrl"))
@@ -53,3 +54,9 @@ Examples:
 
 {"action":"fail","reason":"The screen is asking for a password, which Casca must not enter."}
 """.replace("<os>", OS_NAME).replace("<mod>", MODIFIER)
+
+
+def step_prompt(task: str, step_index: int, history: list[dict], screen: dict) -> str:
+    recent = "\n".join(f"- Step {h['step']}: {json.dumps(h['action'])} -> {json.dumps(h['execution'])}" for h in history[-8:])
+    return (f"Task: {task}\nScreenshot size: width={screen['width']}, height={screen['height']}\n"
+            f"Step index: {step_index}\nRecent history:\n{recent or 'None'}\n\nReply with the next action as JSON.")

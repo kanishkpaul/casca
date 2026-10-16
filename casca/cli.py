@@ -5,9 +5,6 @@ from casca.agent import CascaAgent
 from casca.models.openai_compat import OpenAICompatProvider
 from casca.models.mock_provider import MockVisionProvider
 from casca.config import config
-import os
-import subprocess
-from pathlib import Path
 
 app = typer.Typer(help="Casca: Screenshot-based desktop-control agent.")
 console = Console()
@@ -45,19 +42,10 @@ def run(
     agent.run(task)
 
 @app.command()
-def web():
-    """Start the built-in web UI to view runs and logs."""
-    console.print("[green]Starting Casca Web UI...[/green]")
-    # Get the path to the web folder
-    pkg_dir = Path(__file__).parent.parent
-    web_dir = pkg_dir / "web"
-    app_path = web_dir / "app.py"
-    
-    env = os.environ.copy()
-    env["FLASK_APP"] = str(app_path)
-    env["FLASK_ENV"] = "development"
-    
-    subprocess.run(["flask", "run"], env=env)
+def web(port: int = typer.Option(5000, "--port", help="Port on localhost.")):
+    """Start the replay viewer for past runs."""
+    from casca.web.app import app as viewer
+    viewer.run(port=port)
 
 if __name__ == "__main__":
     app()

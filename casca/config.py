@@ -25,7 +25,7 @@ class Config:
     MAX_STEPS = _number("CASCA_MAX_STEPS", "20")
     MONITOR_INDEX = _number("CASCA_MONITOR", "1")
     SCREENSHOT_MAX_WIDTH = _number("CASCA_SCREENSHOT_MAX_WIDTH", "1280")
-    STEP_DELAY = _number("CASCA_STEP_DELAY", "0.5", float)
+    MAX_SECONDS = _number("CASCA_MAX_SECONDS", "600")
     
     LOG_DIR = os.getenv("CASCA_LOG_DIR") or os.path.join(user_data_dir("casca"), "logs")
 

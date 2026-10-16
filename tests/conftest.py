@@ -57,7 +57,7 @@ class ScriptedModel(VisionActionModel):
 def run_agent(tmp_path):
     def run(model, task="open the menu", desktop=None, **kw):
         agent = CascaAgent(model, screen=FakeScreen(), desktop=desktop or FakeDesktop(),
-                           log_dir=str(tmp_path), step_delay=0, **kw)
+                           log_dir=str(tmp_path), settle_timeout=0, **kw)
         agent.run(task)
         runs = list(tmp_path.iterdir())
         return load_run(runs[0]) if runs else (None, [])

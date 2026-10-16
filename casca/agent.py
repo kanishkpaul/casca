@@ -13,18 +13,26 @@ from casca.safety import SafetyPolicy
 from casca.models.base import VisionActionModel
 from casca.actions import ActionType
 from casca.config import config
-from casca.coords import to_screen
+from casca.coords import POINT_FIELDS, to_screen
 
 console = Console()
 ACTIONS = TypeAdapter(ActionType)
 PARSE_ATTEMPTS = 3
+STUCK_REPEATS = 3
+
+
+def signature(action: dict) -> tuple:
+    """An act with its target rounded to 10 px, so repeating "the same click" is detectable."""
+    return tuple((k, v // 10 if k in POINT_FIELDS else v) for k, v in sorted(action.items())
+                 if k not in ("reason", "expect", "previous"))
 
 class CascaAgent:
     def __init__(
         self,
         model: VisionActionModel,
         max_steps: int = config.MAX_STEPS,
-        step_delay: float = config.STEP_DELAY,
+        max_seconds: float = config.MAX_SECONDS,
+        settle_timeout: float = 2.0,
         unsafe: bool = False,
         confirm_each_step: bool = False,
         dry_run: bool = False,
@@ -35,7 +43,8 @@ class CascaAgent:
     ):
         self.model = model
         self.max_steps = max_steps
-        self.step_delay = step_delay
+        self.max_seconds = max_seconds
+        self.settle_timeout = settle_timeout
         self.unsafe = unsafe
         self.confirm_each_step = confirm_each_step
         self.dry_run = dry_run
@@ -61,6 +70,17 @@ class CascaAgent:
             return None, f"invalid JSON: {e}"
         except ValidationError as e:
             return None, "; ".join(f"{'.'.join(map(str, err['loc']))}: {err['msg']}" for err in e.errors())
+
+    def _settle(self, before: bytes, every: float = 0.15) -> dict:
+        """Waits until the screen has changed and stopped changing, instead of a fixed sleep."""
+        start, last = time.monotonic(), before
+        while time.monotonic() - start < self.settle_timeout:
+            time.sleep(every)
+            frame = self.screen.screenshot()
+            if frame == last != before:
+                break
+            last = frame
+        return {"settle_s": round(time.monotonic() - start, 2), "changed": last != before}
 
     def run(self, task: str) -> str:
         console.print(Panel(f"Starting Casca Agent\nTask: [bold]{escape(task)}[/bold]\nMax steps: {self.max_steps}"))
@@ -88,7 +108,11 @@ class CascaAgent:
             console.print(f"[bold red]Cannot send input:[/bold red] {problem}")
             return "no_input"
 
+        started = time.monotonic()
         for step in range(self.max_steps):
+            if time.monotonic() - started > self.max_seconds:
+                console.print(f"[yellow]Stopped: the {self.max_seconds} s time budget is used up.[/yellow]")
+                return "time_budget"
             console.print(f"\n[cyan]=== Step {step} ===[/cyan]")
             screenshot = self.screen.screenshot()
             width, height = (1000, 1000) if self.coords == "norm1000" else self.screen.image_size
@@ -158,8 +182,16 @@ class CascaAgent:
                 except Exception as e:
                     execution_log = {"status": "error", "error": f"{type(e).__name__}: {e}"}
 
+            if execution_log["status"] == "success" and action.action not in ("done", "fail", "handback", "wait"):
+                execution_log.update(self._settle(screenshot))
+            if action.previous and self.history:
+                self.history[-1]["verified"] = action.previous
             log(action.model_dump(), safety_log, execution_log, raw_output)
             self.history.append({"step": step, "action": action.model_dump(), "execution": execution_log})
+            recent = [signature(h["action"]) for h in self.history[-STUCK_REPEATS:] if isinstance(h["action"], dict)]
+            if len(recent) == STUCK_REPEATS and len(set(recent)) == 1 and action.action not in ("wait", "done"):
+                console.print(f"[bold red]Stopped:[/bold red] the same {action.action} {STUCK_REPEATS} times in a row.")
+                return "stuck"
 
             if action.action == "done":
                 console.print(f"[bold green]Task completed![/bold green]\nAnswer: {escape(action.answer)}")
@@ -173,7 +205,6 @@ class CascaAgent:
             if execution_log["status"] not in ("success", "skipped"):
                 console.print(f"[bold red]Execution failed:[/bold red] {escape(str(execution_log.get('error')))}")
 
-            time.sleep(self.step_delay)
 
         console.print("[yellow]Reached maximum steps without completion.[/yellow]")
         return "max_steps"

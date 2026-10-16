@@ -106,3 +106,24 @@ def test_missing_input_permission_stops_before_acting(run_agent):
     model = ScriptedModel(CLICK)
     meta, _ = run_agent(model, desktop=FakeDesktop(problem="no Accessibility"))
     assert meta["outcome"] == "no_input" and model.histories == []
+
+
+def test_the_same_click_three_times_is_stuck(run_agent):
+    meta, steps = run_agent(ScriptedModel(CLICK, CLICK, CLICK, DONE))
+    assert meta["outcome"] == "stuck" and len(steps) == 3
+
+
+def test_previous_verdict_is_attached_to_the_last_act(run_agent):
+    model = ScriptedModel(CLICK, '{"action": "done", "answer": "a", "reason": "r", "previous": "not_held"}')
+    run_agent(model)
+    assert model.histories[1][0]["verified"] == "not_held"
+
+
+def test_unchanged_screen_is_recorded(run_agent):
+    _, steps = run_agent(ScriptedModel(CLICK, DONE))
+    assert steps[0]["execution"]["changed"] is False
+
+
+def test_time_budget_stops_the_run(run_agent):
+    meta, _ = run_agent(ScriptedModel(CLICK, DONE), max_seconds=-1)
+    assert meta["outcome"] == "time_budget"

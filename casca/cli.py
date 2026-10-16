@@ -6,6 +6,7 @@ from casca.agent import CascaAgent
 from casca.models.openai_compat import OpenAICompatProvider
 from casca.models.mock_provider import MockVisionProvider
 from casca.config import config
+from casca.profiles import load_profile, make_model
 
 app = typer.Typer(help="Casca: Screenshot-based desktop-control agent.")
 console = Console()
@@ -17,6 +18,7 @@ def run(
     provider: str = typer.Option("api", "--provider", help="'api' for any OpenAI-compatible endpoint, or 'mock'."),
     base_url: str = typer.Option(config.BASE_URL, "--base-url", help="Endpoint, e.g. http://localhost:11434/v1 for Ollama."),
     model_name: str = typer.Option(config.MODEL, "--model", help="Model name at that endpoint."),
+    profile: str = typer.Option(None, "--profile", help="A profile from casca.toml; overrides --base-url, --model and --coords."),
     coords: str = typer.Option(config.COORDS, "--coords", help="'image_px', or 'norm1000' for models such as Qwen3-VL."),
     unsafe: bool = typer.Option(False, "--unsafe", help="Allow potentially dangerous actions."),
     confirm_each_step: bool = typer.Option(False, "--confirm-each-step", help="Ask for confirmation before each action."),
@@ -24,7 +26,10 @@ def run(
     log_dir: str = typer.Option(config.LOG_DIR, "--log-dir", help="Directory to save logs."),
 ):
     """Run the Casca agent on a specific task."""
-    if provider == "mock":
+    if profile:
+        settings = load_profile(profile)
+        model, coords = make_model(settings), settings.get("coords", coords)
+    elif provider == "mock":
         model = MockVisionProvider()
     elif provider == "api":
         model = OpenAICompatProvider(base_url, model_name)

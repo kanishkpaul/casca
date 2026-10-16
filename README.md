@@ -27,7 +27,7 @@ experiments, not an operator you should point at real accounts yet.
 
 ## Install
 
-Python 3.10 or later. Tested on 3.14.
+Python 3.11 or later. Tested on 3.14.
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate

@@ -1,16 +1,16 @@
 import json
-import os
+import secrets
 from datetime import datetime
 from pathlib import Path
 
 class RunLogger:
     def __init__(self, log_dir: str = "logs"):
         self.base_dir = Path(log_dir)
-        self.run_id = f"run_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        self.run_id = f"run_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{secrets.token_hex(2)}"
         self.run_dir = self.base_dir / self.run_id
         self.screenshots_dir = self.run_dir / "screenshots"
         
-        self.run_dir.mkdir(parents=True, exist_ok=True)
+        self.run_dir.mkdir(parents=True)
         self.screenshots_dir.mkdir(parents=True, exist_ok=True)
         
         self.steps_file = self.run_dir / "steps.jsonl"

@@ -1,5 +1,6 @@
 import os
 from dotenv import load_dotenv
+from platformdirs import user_data_dir
 
 load_dotenv()
 
@@ -15,6 +16,6 @@ class Config:
     SCREENSHOT_MAX_WIDTH = int(os.getenv("CASCA_SCREENSHOT_MAX_WIDTH", "1280"))
     STEP_DELAY = float(os.getenv("CASCA_STEP_DELAY", "0.5"))
     
-    LOG_DIR = os.getenv("CASCA_LOG_DIR", "logs")
+    LOG_DIR = os.getenv("CASCA_LOG_DIR") or os.path.join(user_data_dir("casca"), "logs")
 
 config = Config()

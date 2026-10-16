@@ -69,6 +69,7 @@ casca run "Open Calculator" --provider mock --dry-run      # mock model, nothing
 casca run "Open TextEdit and type hello" --confirm-each-step
 casca web                                                  # browse past runs
 pytest -q                                                  # tests, on fakes only
+casca doctor                                               # permissions, displays, pointer, model
 ```
 
 Runs are stored in the OS data directory (`~/Library/Application Support/casca/logs` on macOS),
@@ -94,10 +95,9 @@ why `--confirm-each-step` matters until the gates in plans/COMPUTER_USE.md exist
 ## What is not verified
 
 - Scrolling and non-ASCII typing on the real desktop. The tests use a fake desktop.
-- Anything on Windows. The Windows code paths were written from the library sources.
+- Anything on Windows beyond CI. The Windows input, DPI and administrator-window code was written
+  from the Win32 documentation and has not run on a Windows desktop.
 - Any hosted provider since the provider was rewritten.
-- Clicks on a Windows monitor other than the primary are still wrong: PyAutoGUI normalises mouse
-  coordinates to the primary screen.
 
 ## Plans
 

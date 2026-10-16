@@ -18,7 +18,7 @@ Each item was read from the code on `main` and from the installed library source
 
 | Area | macOS | Windows |
 |---|---|---|
-| Capture size | `mss` returns physical pixels (2940 x 1912 on this Retina screen) while the monitor is 1470 x 956 points | Depends on which library sets DPI awareness first (below) |
+| Capture size | Read as 2x on Retina when this plan was written. `casca doctor` measured 1470 px for 1470 points (1x) with mss 10.2 on 2026-10-16. The mapping does not depend on it | Depends on which library sets DPI awareness first (below) |
 | DPI awareness | Not applicable | `pyautogui` calls `SetProcessDPIAware()` (system aware) on import. `mss` calls `SetProcessDpiAwareness(2)` (per-monitor) later. A process can set it once, so the order of imports decides, and on a mixed-scale setup capture and input disagree |
 | Mouse | Points, global coordinates, multi-monitor works | `mouse_event` coordinates are normalised to the primary screen (`65536 * x // width`), so clicks on any other monitor land wrong |
 | Keys | `ctrl` in the prompt is the wrong modifier; `command` is right | `ctrl` is right; `win` exists |
@@ -110,3 +110,23 @@ and `casca doctor` is green on both.
   Mac. xp-01 is the first time any of it runs on Windows.
 - Whether GitHub's hosted runners can send real input and capture a desktop is unknown until
   xp-01 and xp-12.
+
+## Status, 2026-10-16
+
+No Windows machine is available. Windows code runs only in CI (`windows-latest`), with no real
+desktop task.
+
+| Id | State |
+|---|---|
+| xp-01 | Done for macOS through `casca doctor`. Windows spike not possible |
+| xp-02 | Not built as a package. `casca/native.py` holds the OS-specific input, `DesktopController` picks per OS, and `tests/conftest.py` has the fakes. A `Desktop` protocol waits until a third OS needs it |
+| xp-03 | Done: `casca/coords.py`, with Retina, offset-monitor and 0-1000 tests |
+| xp-04 | Done with PyAutoGUI for mouse and keys, `CGEventKeyboardSetUnicodeString` for Unicode. Live run on this Mac passed |
+| xp-05 | Done in code: per-monitor DPI v2, `SendInput` with `MOUSEEVENTF_VIRTUALDESK`, `KEYEVENTF_UNICODE`, 120 per notch. CI on windows-latest moved the cursor with SendInput and read it back; clicks, typing and multi-monitor are unverified |
+| xp-06 | Done in code: elevated foreground window refused, black frame stops the run. Unverified |
+| xp-07 | Done: key aliases per OS, unknown keys rejected, OS and modifier in the prompt |
+| xp-08 | Done: `casca doctor` |
+| xp-09 | Done: logs under `platformdirs`, viewer in the wheel |
+| xp-10 | Not needed yet: output is Rich, which falls back on legacy consoles. Returns with the TUI |
+| xp-11 | Dropped with `examples/`. Task files return with the evals in `COMPUTER_USE.md` |
+| xp-12 | Done: `.github/workflows/ci.yml` |

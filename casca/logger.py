@@ -27,7 +27,12 @@ class RunLogger:
         with open(self.metadata_file, "w") as f:
             json.dump(metadata, f, indent=2)
 
-    def log_step(self, step: int, task: str, screenshot_bytes: bytes, model_raw: str, action: dict, safety: dict, execution: dict):
+    def finish(self, outcome: str):
+        metadata = json.loads(self.metadata_file.read_text())
+        metadata.update(outcome=outcome, end_time=datetime.now().isoformat())
+        self.metadata_file.write_text(json.dumps(metadata, indent=2))
+
+    def log_step(self, step: int, task: str, screenshot_bytes: bytes, model_raw: str | None, action: dict | None, safety: dict | None, execution: dict):
         screenshot_filename = f"step_{step:03d}.png"
         screenshot_path = self.screenshots_dir / screenshot_filename
         

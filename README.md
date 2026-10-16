@@ -107,7 +107,6 @@ why `--confirm-each-step` matters until the gates in plans/COMPUTER_USE.md exist
 | [plans/CROSS_PLATFORM.md](plans/CROSS_PLATFORM.md) | One `Desktop` interface for macOS and Windows |
 | [plans/COMPUTER_USE.md](plans/COMPUTER_USE.md) | The minimal additions for a usable computer-use agent |
 | [plans/TUI.md](plans/TUI.md) | The terminal interface, drawn in [plans/tui-mockups.html](plans/tui-mockups.html) |
-| [TODO.md](TODO.md) | The MVP checklist |
 
 ## Layout
 

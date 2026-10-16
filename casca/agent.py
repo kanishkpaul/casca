@@ -84,6 +84,9 @@ class CascaAgent:
 
     def _loop(self, task: str) -> str:
         monitor = self.screen.get_screen_size()
+        if not self.dry_run and (problem := self.desktop.input_problem()):
+            console.print(f"[bold red]Cannot send input:[/bold red] {problem}")
+            return "no_input"
 
         for step in range(self.max_steps):
             console.print(f"\n[cyan]=== Step {step} ===[/cyan]")

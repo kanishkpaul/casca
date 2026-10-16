@@ -62,6 +62,15 @@ class DesktopController:
     def scroll(self, amount: int) -> None:
         pyautogui.scroll(amount * SCROLL_UNIT)
 
+    def input_problem(self) -> str | None:
+        """Why input would be dropped, with the fix, or None. macOS drops synthetic events silently."""
+        if sys.platform == "darwin":
+            import Quartz
+            if not Quartz.CGPreflightPostEventAccess():
+                return ("Accessibility is not granted to this terminal. Enable it in System Settings > "
+                        "Privacy & Security > Accessibility, then restart the terminal.")
+        return None
+
     def open_app(self, name: str) -> None:
         command = ["open", "-a", name] if sys.platform == "darwin" else ["cmd", "/c", "start", "", name]
         subprocess.run(command, check=True, capture_output=True, timeout=10)

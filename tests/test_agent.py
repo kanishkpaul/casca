@@ -100,3 +100,9 @@ def test_norm1000_points_map_to_screen_points(run_agent):
     desktop, model = FakeDesktop(), ScriptedModel('{"action": "click", "x": 500, "y": 500, "reason": "r"}', DONE)
     run_agent(model, desktop=desktop, coords="norm1000")
     assert (desktop.actions[0].x, desktop.actions[0].y) == (735, 478)
+
+
+def test_missing_input_permission_stops_before_acting(run_agent):
+    model = ScriptedModel(CLICK)
+    meta, _ = run_agent(model, desktop=FakeDesktop(problem="no Accessibility"))
+    assert meta["outcome"] == "no_input" and model.histories == []

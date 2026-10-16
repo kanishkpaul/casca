@@ -15,6 +15,7 @@ class RunLogger:
         
         self.steps_file = self.run_dir / "steps.jsonl"
         self.metadata_file = self.run_dir / "metadata.json"
+        self.steps_file.touch()
 
     def log_metadata(self, task: str, max_steps: int, model: str):
         metadata = {

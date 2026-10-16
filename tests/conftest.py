@@ -27,8 +27,11 @@ class FakeScreen:
 
 
 class FakeDesktop:
-    def __init__(self, fail=None):
-        self.actions, self.fail = [], fail
+    def __init__(self, fail=None, problem=None):
+        self.actions, self.fail, self.problem = [], fail, problem
+
+    def input_problem(self):
+        return self.problem
 
     def execute_action(self, action):
         self.actions.append(action)

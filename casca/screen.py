@@ -12,10 +12,10 @@ class ScreenObserver:
         self.monitor_index = monitor_index
         self.max_width = max_width
         self.sct = mss.mss()
-        # verify monitor index
         monitors = self.sct.monitors
-        if self.monitor_index >= len(monitors):
-            raise ValueError(f"Monitor {self.monitor_index} not found. Available: {len(monitors)-1}")
+        # Index 0 is every monitor combined, which has no single scale or origin to map clicks to.
+        if not 1 <= self.monitor_index < len(monitors):
+            raise ValueError(f"Monitor {self.monitor_index} not found. Use 1 to {len(monitors) - 1}.")
             
     def get_screen_size(self) -> dict:
         monitor = self.sct.monitors[self.monitor_index]

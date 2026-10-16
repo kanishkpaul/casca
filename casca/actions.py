@@ -48,7 +48,7 @@ class HotkeyAction(BaseAction):
 
 class ScrollAction(BaseAction):
     action: Literal["scroll"]
-    amount: int
+    amount: int = Field(ge=-20, le=20, description="Mouse-wheel notches; negative scrolls down.")
 
 class WaitAction(BaseAction):
     action: Literal["wait"]

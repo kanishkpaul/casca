@@ -9,6 +9,9 @@ import sys
 import time
 
 KEY_ALIASES = {"cmd": "command", "win": "winleft", "super": "winleft"}
+# PyAutoGUI scrolls lines on macOS and wheel delta (120 per notch) on Windows.
+SCROLL_UNIT = {"darwin": 3, "win32": 120}.get(sys.platform, 1)
+
 if sys.platform != "darwin":
     KEY_ALIASES.update(command="ctrl", cmd="ctrl")
 
@@ -56,7 +59,7 @@ class DesktopController:
         pyautogui.hotkey(*map(valid_key, keys))
 
     def scroll(self, amount: int) -> None:
-        pyautogui.scroll(amount)
+        pyautogui.scroll(amount * SCROLL_UNIT)
 
     def wait(self, ms: int) -> None:
         time.sleep(ms / 1000.0)

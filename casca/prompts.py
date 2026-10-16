@@ -45,7 +45,7 @@ Examples:
 
 {"action":"hotkey","keys":["<mod>","l"],"reason":"Focus the browser address bar."}
 
-{"action":"scroll","amount":-650,"reason":"More content is likely below the visible area."}
+{"action":"scroll","amount":-5,"reason":"Scroll down five notches; more content is likely below."}
 
 {"action":"done","answer":"The requested information is visible on screen.","reason":"The task objective has been reached."}
 

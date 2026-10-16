@@ -17,3 +17,8 @@ BAD = [
 def test_out_of_range_actions_are_rejected(data):
     with pytest.raises(ValidationError):
         TypeAdapter(ActionType).validate_python({**data, "reason": "r"})
+
+
+def test_scroll_is_bounded_in_notches():
+    with pytest.raises(ValidationError):
+        TypeAdapter(ActionType).validate_python({"action": "scroll", "amount": -650, "reason": "r"})

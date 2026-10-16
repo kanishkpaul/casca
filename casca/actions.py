@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, TypeAdapter
 from typing import Annotated, Literal
 
 Coord = Annotated[int, Field(ge=0)]
@@ -91,3 +91,5 @@ ActionType = Annotated[
     | FailAction,
     Field(discriminator="action"),
 ]
+
+ACTION_SCHEMA = TypeAdapter(ActionType).json_schema()

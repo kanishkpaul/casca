@@ -30,3 +30,11 @@ def test_rate_limit_is_retried(monkeypatch):
 
 def test_http_error_names_status_and_body(monkeypatch):
     assert reply(monkeypatch, httpx.Response(400, text="no images"))["error"] == "http://x/v1/chat/completions returned 400: no images"
+
+
+def test_structured_profile_sends_the_action_schema(monkeypatch):
+    sent = {}
+    ok = httpx.Response(200, json={"choices": [{"message": {"content": "{}"}}]})
+    monkeypatch.setattr(httpx, "post", lambda url, json, **k: sent.update(json) or ok)
+    OpenAICompatProvider("http://x/v1", "m", None, structured=True).propose_action("t", b"png", 0, [], SCREEN)
+    assert "click" in str(sent["response_format"]["json_schema"]["schema"])

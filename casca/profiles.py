@@ -6,6 +6,7 @@
     model = "qwen3-vl-8b"
     key = "none"                       # or "env:OPENAI_API_KEY", or "keychain:casca/openrouter"
     coords = "norm1000"                # or "image_px"
+    structured = "json_schema"         # openai_compat only: constrain replies to the action schema
 """
 import os
 import tomllib
@@ -42,7 +43,7 @@ def make_model(profile: dict):
     adapter = profile.get("adapter", "openai_compat")
     if adapter == "openai_compat":
         from casca.models.openai_compat import OpenAICompatProvider
-        return OpenAICompatProvider(profile["base_url"], profile["model"], key)
+        return OpenAICompatProvider(profile["base_url"], profile["model"], key, profile.get("structured") == "json_schema")
     if adapter == "anthropic":
         from casca.models.anthropic_native import AnthropicProvider
         return AnthropicProvider(profile.get("base_url"), profile["model"], key, profile.get("effort"))

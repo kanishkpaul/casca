@@ -2,6 +2,7 @@ import time
 
 import httpx
 
+from casca.actions import ACTION_SCHEMA
 from casca.config import config
 from casca.models.base import VisionActionModel
 from casca.prompts import SYSTEM_PROMPT, step_prompt
@@ -13,10 +14,12 @@ class OpenAICompatProvider(VisionActionModel):
     (OpenAI, OpenRouter, the Hugging Face router, Groq, Together) or a local server (Ollama,
     LM Studio, llama.cpp, vLLM). A key is sent only when one is set."""
 
-    def __init__(self, base_url: str = config.BASE_URL, model: str = config.MODEL, api_key: str | None = config.API_KEY):
+    def __init__(self, base_url: str = config.BASE_URL, model: str = config.MODEL, api_key: str | None = config.API_KEY,
+                 structured: bool = False):
         self.model = model
         self.url = base_url.rstrip("/").removesuffix("/chat/completions") + "/chat/completions"
         self.headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
+        self.structured = structured
 
     def propose_action(self, task, screenshot_bytes, step_index, history, screen) -> dict:
         prompt = step_prompt(task, step_index, history, screen)
@@ -31,6 +34,9 @@ class OpenAICompatProvider(VisionActionModel):
                 ]},
             ],
         }
+        if self.structured:
+            # Constrained decoding: a server that supports it cannot produce an unparseable action.
+            payload["response_format"] = {"type": "json_schema", "json_schema": {"name": "action", "schema": ACTION_SCHEMA}}
         for attempt in range(3):
             try:
                 response = httpx.post(self.url, json=payload, headers=self.headers, timeout=60)

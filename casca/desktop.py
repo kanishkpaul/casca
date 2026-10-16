@@ -4,7 +4,20 @@ from casca.actions import (
     MoveMouseAction, DragAction, TypeAction, PressAction, HotkeyAction,
     ScrollAction, WaitAction, DoneAction, FailAction
 )
+import sys
 import time
+
+KEY_ALIASES = {"cmd": "command", "win": "winleft", "super": "winleft"}
+if sys.platform != "darwin":
+    KEY_ALIASES.update(command="ctrl", cmd="ctrl")
+
+
+def valid_key(key: str) -> str:
+    """PyAutoGUI ignores names it does not know, so an unknown key would be reported as pressed."""
+    name = KEY_ALIASES.get(key.lower(), key.lower())
+    if not pyautogui.isValidKey(name):
+        raise ValueError(f"unknown key {key!r}")
+    return name
 
 class DesktopController:
     def __init__(self, screen_width: int, screen_height: int, pause: float = 0.05):
@@ -33,10 +46,10 @@ class DesktopController:
         pyautogui.typewrite(text, interval=interval)
 
     def press(self, key: str) -> None:
-        pyautogui.press(key)
+        pyautogui.press(valid_key(key))
 
     def hotkey(self, keys: list[str]) -> None:
-        pyautogui.hotkey(*keys)
+        pyautogui.hotkey(*map(valid_key, keys))
 
     def scroll(self, amount: int) -> None:
         pyautogui.scroll(amount)

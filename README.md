@@ -1,28 +1,29 @@
-# Casca v0.1 (Python prototype)
+# Casca
 
-> **This branch is archived.** It holds the Python prototype of Casca, tagged `v0.1`. It is kept
-> runnable as the baseline the Rust rebuild on [`main`](https://github.com/kanishkpaul/casca) has
-> to beat. It gets no new features. Fixes land here only if they are needed to run the baseline.
-
-A screenshot-driven desktop agent for studying visual grounding and computer-use loops. Each step
-takes a screenshot, asks a vision model for one typed action, validates it, executes it with the
-mouse and keyboard, and logs everything.
+A screenshot-driven desktop agent. Each step takes a screenshot, asks a vision model for one typed
+action, checks it, executes it with the mouse and keyboard, and records everything.
 
 ```text
-observe (screenshot) → propose (one JSON action) → validate → execute → log → repeat
+observe (screenshot) → propose (one JSON action) → check → execute → record → repeat
 ```
 
-It is a harness for experiments, not an operator you should point at real accounts.
+It runs on any model you choose: a hosted provider with your own key, or a local model through
+Ollama, LM Studio, llama.cpp or vLLM. It targets macOS and Windows. It is a harness for
+experiments, not an operator you should point at real accounts yet.
 
 ## What it does
 
-- Captures one monitor as the model's only observation.
-- Asks the model for exactly one action: click, double or right click, move, drag, type, key
-  press, hotkey, scroll, wait, done or fail.
-- Parses actions into Pydantic models instead of loose strings.
-- `--dry-run` proposes actions without executing them. `--confirm-each-step` asks before each one.
-- Saves every step's screenshot, raw model output and result under `logs/`.
-- `casca web` opens a small Flask viewer for replaying past runs.
+- Captures one monitor and maps the model's screenshot pixels back to screen points, including
+  Retina scaling and the monitor's origin.
+- Asks for exactly one action: click, double or right click, move, drag, type, key press, hotkey,
+  scroll, wait, done or fail. Replies are parsed strictly; a bad one is retried twice with the
+  validation error.
+- Refuses out-of-range coordinates, unknown keys, quit and delete shortcuts, and text that looks
+  like an API key or card number. Types non-ASCII text as Unicode.
+- Stops before the first model call if the screen cannot be captured.
+- `--dry-run` proposes without executing. `--confirm-each-step` asks before each action.
+- Records every step's screenshot, raw reply, checks and result, and each run's outcome.
+- `casca web` opens a viewer for past runs.
 
 ## Install
 
@@ -30,108 +31,74 @@ Python 3.10 or later. Tested on 3.14.
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
-pip install -e .
-cp .env.example .env    # then add your Hugging Face token
+pip install -e ".[dev]"
+cp .env.example .env
 ```
 
-Install with `-e`. The packaged wheel leaves out `web/`, so `casca web` only works from an
-editable install, with the virtual environment activated.
+## Choose a model
 
-`.env` sets the model (`HF_MODEL_ID`, default `google/gemma-4-31b-it`), the step limit, the
-monitor to capture and the screenshot width sent to the model.
+Casca talks to any OpenAI-compatible `/chat/completions` endpoint that accepts images. Set it in
+`.env` or per run:
+
+```bash
+# Hosted, your own key
+CASCA_BASE_URL=https://openrouter.ai/api/v1 CASCA_MODEL=<model> CASCA_API_KEY=<key> casca run "..."
+
+# Local, no key
+casca run "Open TextEdit and type hello" --base-url http://localhost:11434/v1 --model qwen3-vl:8b
+```
+
+The default is the Hugging Face router with `google/gemma-4-31b-it`, which needs a key in
+`CASCA_API_KEY` (or the older `HF_API_TOKEN`).
 
 ## macOS setup
 
-macOS will not let a program see or control the screen until you grant it permission. Casca runs
-inside your terminal, so the grant goes to the terminal app (Terminal, iTerm, Ghostty, VS Code):
+macOS will not let a program see or control the screen until you grant it. Casca runs inside your
+terminal, so the grant goes to the terminal app (Terminal, iTerm, Ghostty, VS Code):
 
 1. **System Settings → Privacy & Security → Screen Recording:** enable your terminal. Without it,
-   screenshots come back blank and Casca does not warn you.
+   Casca stops and says so.
 2. **System Settings → Privacy & Security → Accessibility:** enable your terminal. Without it,
-   clicks and key presses are silently dropped.
-3. Quit and reopen the terminal after changing either setting.
-
-Check with a dry run and open the saved screenshot:
-
-```bash
-casca run "Open Calculator" --provider mock --dry-run --max-steps 3
-open logs/run_*/screenshots/step_000.png
-```
-
-If the image shows your windows, capture works. Shortcuts on macOS use `command`, not `ctrl`.
-The prompt's examples use `ctrl`, so a model may need telling.
+   clicks and key presses are dropped.
+3. Quit and reopen the terminal after changing either.
 
 ## Usage
 
 ```bash
-# Mock model, nothing executed
-casca run "Open Calculator" --provider mock --dry-run
-
-# Real model, confirm every action before it happens
-casca run "Open TextEdit and type hello world" --max-steps 10 --confirm-each-step
-
-# Browse past runs
-casca web
+casca run "Open Calculator" --provider mock --dry-run      # mock model, nothing executed
+casca run "Open TextEdit and type hello" --confirm-each-step
+casca web                                                  # browse past runs
+pytest -q                                                  # tests, on fakes only
 ```
 
-Move the mouse into a screen corner to abort a run (PyAutoGUI's fail-safe).
+Runs are stored in the OS data directory (`~/Library/Application Support/casca/logs` on macOS),
+or `CASCA_LOG_DIR`. Move the mouse into a screen corner, or press Ctrl-C, to stop a run.
 
-## Known issues
+## What is not verified
 
-Measured on 2026-10-13 on a MacBook with a 1470x956 display. None of these will be fixed here.
-Each one shaped a decision in the rebuild.
+- Clicks, typing and scrolling on the real desktop since the coordinate, Unicode and scroll fixes.
+  The tests use a fake desktop.
+- Anything on Windows. The Windows code paths were written from the library sources.
+- A live call to any model since the provider was rewritten.
+- Clicks on a Windows monitor other than the primary are still wrong: PyAutoGUI normalises mouse
+  coordinates to the primary screen.
 
-- **Clicks land in the wrong place.** The model sees a screenshot shrunk to 1280 px wide, but the
-  prompt gives the real screen size and coordinates are never scaled back. Clicks land at 87 % of
-  the intended distance from the top-left corner on a 1470-wide screen, and at 67 % on a
-  1920-wide one. Setting `CASCA_SCREENSHOT_MAX_WIDTH` to your screen width avoids it.
-- **The model barely sees its own history.** It gets the action name and success or failure for
-  the last five steps: no coordinates, no typed text, no reasons. It repeats itself.
-- **The safety filter blocks harmless tasks and checks no actions.** It matches substrings of the
-  task text, so "Find information about the weather" is refused ("information" contains "format")
-  and so is "Check the bank holiday calendar". The per-action check approves everything. Use
-  `--dry-run` or `--confirm-each-step` for anything real.
-- **Some model outputs crash the run.** A `wait` with negative milliseconds passes validation and
-  then raises. A 27-hour wait is accepted. Errors from PyAutoGUI, including its own fail-safe, end
-  the run without logging the step.
-- **Some failures are logged as success.** `typewrite` drops non-ASCII characters and `press`
-  ignores unknown key names, and both report success.
-- **A malformed reply ends the run.** There is no retry. Float coordinates, two JSON objects in
-  one reply, or `done` without an `answer` all stop it.
-- **Runs cannot be compared across models.** The run metadata records the provider class, not the
-  model, and has no outcome, end time, screen size or scale factor.
-- **Blank screenshots are not detected** (see the macOS setup above).
-- **The default Hugging Face endpoint may be out of date.** It falls back to
-  `api-inference.huggingface.co`. Not tested here. Set `HF_API_URL` if requests fail.
-- `examples/tasks.yaml` uses Windows apps and is not read by any command.
+## Plans
 
-On the same machine, one step spent about 50 ms on capture, resize and PNG encode, against 1 to
-10 s waiting for the model. The prototype is slow because of the model and the number of steps,
-not because it is written in Python.
-
-## What the rebuild keeps and replaces
-
-| Kept | Replaced |
+| Plan | What it covers |
 |---|---|
-| Typed actions | Coordinates first, by element numbers read from the accessibility tree |
-| Dry runs and per-step confirmation | The keyword filter, by an envelope fixed before the screen is read, and gates on each act |
-| One trace per run with every frame | Hugging Face only, by any hosted provider with your own key, or a local model |
-| A replay viewer | One monitor on macOS, by macOS, Windows and Linux behind one trait |
+| [plans/BUGFIX_PLAN.md](plans/BUGFIX_PLAN.md) | The 31 bugs found on 2026-10-16 and their order |
+| [plans/CROSS_PLATFORM.md](plans/CROSS_PLATFORM.md) | One `Desktop` interface for macOS and Windows |
+| [plans/COMPUTER_USE.md](plans/COMPUTER_USE.md) | The minimal additions for a usable computer-use agent |
+| [plans/TUI.md](plans/TUI.md) | The terminal interface, drawn in [plans/tui-mockups.html](plans/tui-mockups.html) |
+| [TODO.md](TODO.md) | The MVP checklist |
 
-The reasons are in [`docs/LESSONS.md`](https://github.com/kanishkpaul/casca/blob/main/docs/LESSONS.md)
-and [`docs/DECISIONS.md`](https://github.com/kanishkpaul/casca/blob/main/docs/DECISIONS.md) on
-`main`.
-
-## Repo layout
+## Layout
 
 ```text
-casca/            agent loop, actions, safety, screen capture, providers
-casca/models/     Hugging Face and mock providers
-web/              Flask replay viewer
-examples/         sample tasks
-logs/             run output, one folder per run
+casca/            agent loop, actions, coordinates, safety, screen capture, input
+casca/models/     OpenAI-compatible and mock providers
+casca/web/        replay viewer
+tests/            tests on a fake screen and desktop
+plans/            plans and design mockups
 ```
-
-## License
-
-MIT

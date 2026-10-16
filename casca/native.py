@@ -158,3 +158,17 @@ def win_element(x: int | None = None, y: int | None = None) -> dict:
     kernel32.QueryFullProcessImageNameW(ctypes.c_void_p(process), 0, path, ctypes.byref(size))
     kernel32.CloseHandle(ctypes.c_void_p(process))
     return {"app": path.value.rsplit("\\", 1)[-1].removesuffix(".exe") or None, "role": None, "name": "", "secure": False}
+
+
+def stop_chord_down() -> bool:
+    """ctrl+option+esc on macOS, ctrl+alt+esc on Windows, read from the OS key state, so it works
+    whichever app has focus and needs no keyboard hook."""
+    if sys.platform == "darwin":
+        import Quartz
+        flags = Quartz.CGEventSourceFlagsState(Quartz.kCGEventSourceStateHIDSystemState)
+        control, option = Quartz.kCGEventFlagMaskControl, Quartz.kCGEventFlagMaskAlternate
+        return bool(flags & control and flags & option
+                    and Quartz.CGEventSourceKeyState(Quartz.kCGEventSourceStateHIDSystemState, 53))
+    if sys.platform == "win32":
+        return all(ctypes.windll.user32.GetAsyncKeyState(key) & 0x8000 for key in (0x11, 0x12, 0x1B))
+    return False

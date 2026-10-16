@@ -135,3 +135,27 @@ def test_confirm_without_a_terminal_is_a_refused_step(run_agent):
     meta, steps = run_agent(ScriptedModel(CLICK, DONE), desktop=desktop)
     assert steps[0]["execution"]["status"] == "refused" and desktop.actions[-1].action == "done"
     assert steps[0]["safety"]["gate"] == "confirm"
+
+
+def test_stop_keys_stop_before_the_next_act(run_agent):
+    desktop = FakeDesktop()
+    desktop.stop = True
+    model = ScriptedModel(CLICK)
+    model.propose_action = (lambda f: lambda *a: __import__("time").sleep(0.2) or f(*a))(model.propose_action)
+    meta, steps = run_agent(model, desktop=desktop)
+    assert meta["outcome"] == "stopped" and desktop.actions == []
+
+
+def test_moving_the_mouse_takes_over(run_agent):
+    desktop = FakeDesktop()
+    model = ScriptedModel(CLICK, '{"action": "press", "key": "a", "reason": "r", "expect": "e"}')
+    # The user moves the mouse while the model thinks about the second step.
+    model.propose_action = (lambda f: lambda *a: (len(model.histories) == 1 and setattr(desktop, "pointer", (300, 300)))
+                            or f(*a))(model.propose_action)
+    meta, _ = run_agent(model, desktop=desktop)
+    assert meta["outcome"] == "taken_over" and len(desktop.actions) == 1
+
+
+def test_handback_without_a_terminal_ends_the_run(run_agent):
+    meta, _ = run_agent(ScriptedModel('{"action": "handback", "reason": "sign in"}'))
+    assert meta["outcome"] == "handed_back"

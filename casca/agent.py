@@ -1,5 +1,6 @@
 import json
 import sys
+import threading
 import time
 from rich.console import Console
 from rich.markup import escape
@@ -96,10 +97,28 @@ class CascaAgent:
                       f"[yellow]│[/yellow] [dim]{escape(reason)}[/dim]\n[yellow]╰─ \\[y] approve once · \\[n/enter] deny ─[/yellow]")
         return console.input("> ").strip().lower() == "y"
 
+    @staticmethod
+    def _moved(a: tuple[int, int], b: tuple[int, int]) -> bool:
+        return abs(a[0] - b[0]) > 5 or abs(a[1] - b[1]) > 5
+
+    def _pause(self, reason: str) -> bool:
+        """Hands control to the user. True to carry on from a fresh capture; no terminal means stop."""
+        console.print(f"[bold yellow]Your turn:[/bold yellow] {escape(reason)}")
+        if not sys.stdin.isatty():
+            return False
+        return console.input("Press Enter when done, or type stop: ").strip().lower() != "stop"
+
+    def _watch_stop(self) -> None:
+        while not self.finished.is_set():
+            if self.desktop.stop_pressed():
+                self.stop_requested.set()
+                return
+            time.sleep(0.05)
+
     def _settle(self, before: bytes, every: float = 0.15) -> dict:
         """Waits until the screen has changed and stopped changing, instead of a fixed sleep."""
         start, last = time.monotonic(), before
-        while time.monotonic() - start < self.settle_timeout:
+        while time.monotonic() - start < self.settle_timeout and not self.stop_requested.is_set():
             time.sleep(every)
             frame = self.screen.screenshot()
             if frame == last != before:
@@ -118,12 +137,16 @@ class CascaAgent:
         self.logger = RunLogger(log_dir=self.log_dir)
         self.logger.log_metadata(task, self.max_steps, self.model.__class__.__name__)
         outcome = "crashed"
+        self.stop_requested, self.finished = threading.Event(), threading.Event()
+        if not self.dry_run:
+            threading.Thread(target=self._watch_stop, daemon=True).start()
         try:
             outcome = self._loop(task)
         except (KeyboardInterrupt, FailSafeException):
             outcome = "interrupted"
             console.print("[yellow]Interrupted. Stopping.[/yellow]")
         finally:
+            self.finished.set()
             self.logger.finish(outcome)
         return outcome
 
@@ -133,7 +156,7 @@ class CascaAgent:
             console.print(f"[bold red]Cannot send input:[/bold red] {problem}")
             return "no_input"
 
-        started = time.monotonic()
+        started, self.left_at = time.monotonic(), None
         for step in range(self.max_steps):
             if time.monotonic() - started > self.max_seconds:
                 console.print(f"[yellow]Stopped: the {self.max_seconds} s time budget is used up.[/yellow]")
@@ -203,6 +226,16 @@ class CascaAgent:
                 execution_log = {"status": "skipped"}
             else:
                 console.print("[dim]Executing...[/dim]")
+                if self.stop_requested.is_set():
+                    console.print("[bold yellow]Stopped by the stop keys.[/bold yellow] Nothing was undone.")
+                    log(action.model_dump(), safety_log, {"status": "stopped"}, raw_output)
+                    return "stopped"
+                if self.left_at and self._moved(self.desktop.cursor(), self.left_at):
+                    if not self._pause("you moved the mouse, so Casca paused."):
+                        log(action.model_dump(), safety_log, {"status": "taken_over"}, raw_output)
+                        return "taken_over"
+                    self.left_at = None
+                    continue
                 if problem := self.desktop.input_problem():
                     console.print(f"[bold red]Cannot send input:[/bold red] {problem}")
                     log(action.model_dump(), safety_log, {"status": "no_input", "error": problem}, raw_output)
@@ -217,6 +250,8 @@ class CascaAgent:
 
             if execution_log["status"] == "success" and action.action not in ("done", "fail", "handback", "wait"):
                 execution_log.update(self._settle(screenshot))
+            if execution_log["status"] == "success" and action.action in gates.POINTER | {"move_mouse"}:
+                self.left_at = self.desktop.cursor()
             if action.previous and self.history:
                 self.history[-1]["verified"] = action.previous
             log(action.model_dump(), safety_log, execution_log, raw_output)
@@ -230,8 +265,10 @@ class CascaAgent:
                 console.print(f"[bold green]Task completed![/bold green]\nAnswer: {escape(action.answer)}")
                 return "done"
             if action.action == "handback":
-                console.print(f"[bold yellow]Your turn:[/bold yellow] {escape(action.reason)}")
-                return "handed_back"
+                if self.dry_run or not self._pause(action.reason):
+                    return "handed_back"
+                self.history[-1]["execution"] = {"status": "user_done", "note": "the user finished this and said to carry on"}
+                continue
             if action.action == "fail":
                 console.print(f"[bold red]Agent reported failure:[/bold red]\nReason: {escape(action.reason)}")
                 return "fail"

@@ -86,6 +86,12 @@ class DesktopController:
                     "or run Casca as administrator.")
         return None
 
+    def cursor(self) -> tuple[int, int]:
+        return tuple(pyautogui.position())
+
+    def stop_pressed(self) -> bool:
+        return native.stop_chord_down()
+
     def element_at(self, x: int, y: int) -> dict | None:
         return native.mac_element(x, y) if sys.platform == "darwin" else native.win_element(x, y) if WINDOWS else None
 

@@ -31,6 +31,15 @@ class FakeDesktop:
         self.actions, self.fail, self.problem = [], fail, problem
         self.element = element or {"app": "Fixture", "role": "AXButton", "name": "OK", "secure": False}
 
+    stop = False
+    pointer = (0, 0)
+
+    def cursor(self):
+        return self.pointer
+
+    def stop_pressed(self):
+        return self.stop
+
     def element_at(self, x, y):
         return self.element
 

@@ -86,3 +86,11 @@ def test_history_carries_arguments_reason_and_error(run_agent):
     entry = model.histories[1][0]
     assert entry["action"] == {"action": "click", "x": 10, "y": 10, "reason": "r"}
     assert entry["execution"]["error"] == "OSError: no input"
+
+
+def test_blank_screen_stops_before_the_model_is_asked(tmp_path):
+    from casca.agent import CascaAgent
+    from tests.conftest import FakeScreen
+    model = ScriptedModel(DONE)
+    outcome = CascaAgent(model, screen=FakeScreen(color="black"), desktop=FakeDesktop(), log_dir=str(tmp_path)).run("t")
+    assert outcome == "blank_screen" and model.histories == []

@@ -91,6 +91,11 @@ class CascaAgent:
             def log(action, safety, execution, raw=None):
                 self.logger.log_step(step, task, screenshot, raw, action, safety, execution)
 
+            if step == 0 and (problem := self.screen.capture_problem()):
+                console.print(f"[bold red]Cannot see the screen:[/bold red] {problem}")
+                log(None, None, {"status": "blank_screen", "error": problem})
+                return "blank_screen"
+
             console.print("[dim]Thinking...[/dim]")
             feedback = []
             for _ in range(PARSE_ATTEMPTS):

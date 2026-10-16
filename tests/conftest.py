@@ -14,6 +14,9 @@ class FakeScreen:
         self.size = monitor or {"left": 0, "top": 0, "width": 1470, "height": 956}
         self.color = color
 
+    def capture_problem(self):
+        return "blank" if self.color == "black" else None
+
     def get_screen_size(self):
         return self.size
 

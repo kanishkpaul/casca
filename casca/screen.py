@@ -1,5 +1,7 @@
 import mss
-from PIL import Image
+import sys
+
+from PIL import Image, ImageStat
 import io
 from pathlib import Path
 from casca.utils import encode_image_base64
@@ -26,6 +28,17 @@ class ScreenObserver:
             return img.resize((self.max_width, new_height), Image.Resampling.LANCZOS)
         return img
 
+    def capture_problem(self) -> str | None:
+        """Why the last capture cannot be trusted, with the fix, or None."""
+        if sys.platform == "darwin":
+            import Quartz
+            if not Quartz.CGPreflightScreenCaptureAccess():
+                return ("Screen Recording is not granted to this terminal. Enable it in System Settings > "
+                        "Privacy & Security > Screen Recording, then restart the terminal.")
+        if self.uniform:
+            return "The screenshot is a single colour. Check screen capture permission, or that the display is awake."
+        return None
+
     def screenshot(self, path: str | Path | None = None) -> bytes:
         monitor = self.sct.monitors[self.monitor_index]
         sct_img = self.sct.grab(monitor)
@@ -36,6 +49,7 @@ class ScreenObserver:
             
         img = self._resize_if_needed(img)
         self.image_size = img.size
+        self.uniform = ImageStat.Stat(img.convert("L")).stddev[0] < 2
         img_byte_arr = io.BytesIO()
         img.save(img_byte_arr, format='PNG')
         return img_byte_arr.getvalue()

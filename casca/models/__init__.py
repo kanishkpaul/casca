@@ -1,5 +1,5 @@
 from casca.models.base import VisionActionModel
-from casca.models.hf_provider import HFVisionProvider
+from casca.models.openai_compat import OpenAICompatProvider
 from casca.models.mock_provider import MockVisionProvider
 
-__all__ = ["VisionActionModel", "HFVisionProvider", "MockVisionProvider"]
+__all__ = ["VisionActionModel", "OpenAICompatProvider", "MockVisionProvider"]

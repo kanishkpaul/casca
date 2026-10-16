@@ -2,7 +2,7 @@ import typer
 from rich.console import Console
 from typing import Optional
 from casca.agent import CascaAgent
-from casca.models.hf_provider import HFVisionProvider
+from casca.models.openai_compat import OpenAICompatProvider
 from casca.models.mock_provider import MockVisionProvider
 from casca.config import config
 import os
@@ -16,7 +16,9 @@ console = Console()
 def run(
     task: str = typer.Argument(..., help="The task for the agent to accomplish."),
     max_steps: int = typer.Option(config.MAX_STEPS, "--max-steps", help="Maximum number of steps."),
-    provider: str = typer.Option("hf", "--provider", help="Model provider ('hf' or 'mock')."),
+    provider: str = typer.Option("api", "--provider", help="'api' for any OpenAI-compatible endpoint, or 'mock'."),
+    base_url: str = typer.Option(config.BASE_URL, "--base-url", help="Endpoint, e.g. http://localhost:11434/v1 for Ollama."),
+    model_name: str = typer.Option(config.MODEL, "--model", help="Model name at that endpoint."),
     unsafe: bool = typer.Option(False, "--unsafe", help="Allow potentially dangerous actions."),
     confirm_each_step: bool = typer.Option(False, "--confirm-each-step", help="Ask for confirmation before each action."),
     dry_run: bool = typer.Option(False, "--dry-run", help="Propose actions without executing them."),
@@ -25,12 +27,8 @@ def run(
     """Run the Casca agent on a specific task."""
     if provider == "mock":
         model = MockVisionProvider()
-    elif provider == "hf":
-        try:
-            model = HFVisionProvider()
-        except ValueError as e:
-            console.print(f"[bold red]Configuration error:[/bold red] {e}")
-            raise typer.Exit(1)
+    elif provider == "api":
+        model = OpenAICompatProvider(base_url, model_name)
     else:
         console.print(f"[bold red]Unknown provider:[/bold red] {provider}")
         raise typer.Exit(1)

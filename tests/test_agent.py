@@ -52,3 +52,8 @@ def test_fail_safe_interrupts_and_finalizes(run_agent):
 def test_max_steps_is_an_outcome(run_agent):
     meta, _ = run_agent(ScriptedModel(CLICK, CLICK), max_steps=2)
     assert meta["outcome"] == "max_steps"
+
+
+def test_dry_run_reports_skipped_not_success(run_agent):
+    _, steps = run_agent(ScriptedModel(CLICK, DONE), dry_run=True)
+    assert steps[0]["execution"] == {"status": "skipped"}

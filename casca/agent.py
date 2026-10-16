@@ -129,7 +129,7 @@ class CascaAgent:
 
             if self.dry_run:
                 console.print("[yellow][DRY RUN] Skipping execution[/yellow]")
-                execution_log = {"status": "success"}
+                execution_log = {"status": "skipped"}
             else:
                 console.print("[dim]Executing...[/dim]")
                 try:
@@ -149,7 +149,7 @@ class CascaAgent:
             if action.action == "fail":
                 console.print(f"[bold red]Agent reported failure:[/bold red]\nReason: {escape(action.reason)}")
                 return "fail"
-            if execution_log["status"] != "success":
+            if execution_log["status"] not in ("success", "skipped"):
                 console.print(f"[bold red]Execution failed:[/bold red] {escape(str(execution_log.get('error')))}")
 
             time.sleep(self.step_delay)

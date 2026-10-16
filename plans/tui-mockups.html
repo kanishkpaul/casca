@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Casca terminal screens</title>
+<style>
+/* Terminal colours are the shell skin's --tui-* tokens from design-kit/tokens/skins.css. */
+:root {
+  --tui-title: #8A5A1A; --tui-accent: #B5301F; --tui-border: #A93A2E; --tui-dim: #806A60;
+  --tui-text: #2A1714; --tui-label: #7E4F14; --tui-status-bg: #F8F1EE; --tui-status-text: #6F6F6F;
+  --tui-status-strong: #B5301F; --tui-status-dim: #96847C; --tui-ok: #2E7D32; --tui-warn: #9A5600;
+  --tui-error: #B3261E; --tui-shell: #B5301F; --tui-selection: #F0D5CE;
+  --term-bg: #FFFBF8; --page-bg: #F3ECE8; --page-text: #2A1714; --page-dim: #806A60; --page-rule: #E2D5CF;
+  --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --tui-title: #E8C88A; --tui-accent: #E5533D; --tui-border: #A93A2E; --tui-dim: #8A6258;
+    --tui-text: #F3E9DA; --tui-label: #D8B37A; --tui-status-bg: #1E1312; --tui-status-text: #D8CDC0;
+    --tui-status-strong: #E8C88A; --tui-status-dim: #7F655B; --tui-ok: #6FC27F; --tui-warn: #F2B04B;
+    --tui-error: #FF6B5E; --tui-shell: #F08A6E; --tui-selection: #5A2620;
+    --term-bg: #140D0C; --page-bg: #0E0908; --page-text: #F3E9DA; --page-dim: #8A6258; --page-rule: #2A1C1A;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --tui-title: #E8C88A; --tui-accent: #E5533D; --tui-border: #A93A2E; --tui-dim: #8A6258;
+  --tui-text: #F3E9DA; --tui-label: #D8B37A; --tui-status-bg: #1E1312; --tui-status-text: #D8CDC0;
+  --tui-status-strong: #E8C88A; --tui-status-dim: #7F655B; --tui-ok: #6FC27F; --tui-warn: #F2B04B;
+  --tui-error: #FF6B5E; --tui-shell: #F08A6E; --tui-selection: #5A2620;
+  --term-bg: #140D0C; --page-bg: #0E0908; --page-text: #F3E9DA; --page-dim: #8A6258; --page-rule: #2A1C1A;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page-bg); color: var(--page-text); font: 15px/1.5 var(--font-sans); }
+main { max-width: 64rem; margin: 0 auto; padding: 32px 16px 64px; display: grid; gap: 40px; }
+header { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: baseline; justify-content: space-between; }
+h1 { margin: 0; font: 600 22px/1.2 var(--font-sans); }
+h1 span { color: var(--tui-accent); font-family: var(--font-mono); margin-right: 8px; }
+.lede { margin: 6px 0 0; color: var(--page-dim); max-width: 44rem; }
+.seg { display: inline-flex; border: 1px solid var(--page-rule); border-radius: 8px; overflow: hidden; }
+.seg button { font: 13px var(--font-sans); padding: 6px 12px; border: 0; background: none; color: var(--page-dim); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--tui-selection); color: var(--page-text); }
+section { display: grid; gap: 10px; }
+h2 { margin: 0; font: 600 16px/1.3 var(--font-sans); }
+.note { margin: 0; color: var(--page-dim); font-size: 14px; max-width: 48rem; }
+.note code { font-family: var(--font-mono); font-size: 13px; }
+.term {
+  margin: 0; padding: 14px 16px; border-radius: 8px; border: 1px solid var(--page-rule);
+  background: var(--term-bg); color: var(--tui-text);
+  font: 12.5px/1.35 var(--font-mono); white-space: pre; overflow-x: auto; tab-size: 4;
+}
+.term ::selection { background: var(--tui-selection); }
+.t-title { color: var(--tui-title); font-weight: 700; }
+.t-accent { color: var(--tui-accent); }
+.t-border { color: var(--tui-border); }
+.t-dim { color: var(--tui-dim); }
+.t-label { color: var(--tui-label); }
+.t-ok { color: var(--tui-ok); }
+.t-warn { color: var(--tui-warn); }
+.t-error { color: var(--tui-error); }
+.t-shell { color: var(--tui-shell); }
+.t-bold { font-weight: 700; }
+.banner { display: block; line-height: 1.12; }
+.ico { display: inline-block; width: 2ch; text-align: center; }
+.t-status { display: block; margin: 0 -16px; padding: 0 16px; background: var(--tui-status-bg); color: var(--tui-status-text); }
+.t-strong { color: var(--tui-status-strong); font-weight: 700; }
+.t-sdim { color: var(--tui-status-dim); }
+.t-swarn { color: var(--tui-warn); }
+.t-sel { background: var(--tui-selection); }
+.mono-plain { color: var(--page-text); }
+.mono-plain span { color: inherit !important; font-weight: 400 !important; background: none !important; }
+
+/* Interactive mode: Textual panes */
+.app {
+  border: 1px solid var(--page-rule); border-radius: 8px; overflow: hidden; background: var(--term-bg);
+  font: 13px/1.35 var(--font-mono); color: var(--tui-text);
+  display: grid; grid-template-columns: minmax(0, 1fr) 17rem; grid-template-rows: minmax(18rem, auto) auto auto;
+}
+.pane { white-space: pre; overflow-x: auto; padding: 10px 14px; margin: 0; font: inherit; }
+.pane-title { display: block; margin: -10px -14px 8px; padding: 2px 14px; color: var(--tui-dim); border-bottom: 1px solid var(--page-rule); }
+.log { border-right: 1px solid var(--tui-border); }
+.composer { grid-column: 1 / -1; border-top: 1px solid var(--tui-border); padding: 6px 14px; white-space: pre; }
+.statusbar { grid-column: 1 / -1; background: var(--tui-status-bg); color: var(--tui-status-text); padding: 2px 14px; white-space: pre; overflow-x: auto; }
+@media (max-width: 760px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .log { border-right: 0; border-bottom: 1px solid var(--tui-border); }
+}
+.narrow { max-width: calc(50ch + 34px); }
+footer { color: var(--page-dim); font-size: 13px; border-top: 1px solid var(--page-rule); padding-top: 16px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1><span>⬡</span>Casca terminal screens</h1>
+      <p class="lede">Drawn from the design kit: Hermes grammar from <code>system/TUI.md</code>, Casca's direction, the <code>shell</code> skin's terminal palette. Screens are drawn at 80 columns unless they say otherwise.</p>
+    </div>
+    <div class="seg" role="group" aria-label="Colour mode">
+      <button type="button" data-mode="auto" aria-pressed="true">Auto</button>
+      <button type="button" data-mode="dark" aria-pressed="false">Dark</button>
+      <button type="button" data-mode="light" aria-pressed="false">Light</button>
+    </div>
+  </header>
+
+  <section>
+    <h2>1 · Interactive, empty state</h2>
+    <p class="note"><code>casca</code> with no arguments. The banner shows here and nowhere else. The metadata line says what will leave the machine before anything is typed.</p>
+    <pre class="term" id="s-empty"></pre>
+  </section>
+
+  <section>
+    <h2>2 · Line mode, a task running</h2>
+    <p class="note"><code>casca run "…"</code>. No banner, no status bar. Every target is quoted by the label the hit test read, never by what the model called it.</p>
+    <pre class="term" id="s-run"></pre>
+  </section>
+
+  <section>
+    <h2>3 · Gate</h2>
+    <p class="note">The one box in the grammar, bordered in <code>warn</code>. Default is deny, and Enter alone does nothing.</p>
+    <pre class="term" id="s-gate"></pre>
+  </section>
+
+  <section>
+    <h2>4 · Refusal and hand-back</h2>
+    <p class="note">Typing into a password field is refused outright, not offered as a gate. Hand-back uses <code>label</code>, not <code>warn</code>, because nothing is being approved.</p>
+    <pre class="term" id="s-hand"></pre>
+  </section>
+
+  <section>
+    <h2>5 · Verify failed, recovery, stop</h2>
+    <p class="note">A failed row colours only its verb and swaps the duration for the reason. Esc stops before the next input event.</p>
+    <pre class="term" id="s-stop"></pre>
+  </section>
+
+  <section>
+    <h2>6 · Done</h2>
+    <pre class="term" id="s-done"></pre>
+  </section>
+
+  <section>
+    <h2>7 · Interactive, mid-task</h2>
+    <p class="note">The log pane holds tool rows, and the rail shows the selected step. The status bar names the model, locality, budget used, bytes sent and gates waiting. Below 100 columns the rail becomes an overlay toggled with <code>i</code>.</p>
+    <div class="app" id="s-app">
+      <pre class="pane log" id="app-log"></pre>
+      <pre class="pane rail" id="app-rail"></pre>
+      <div class="composer" id="app-composer"></div>
+      <div class="statusbar" id="app-status"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>8 · casca doctor</h2>
+    <pre class="term" id="s-doctor"></pre>
+  </section>
+
+  <section>
+    <h2>9 · casca trace</h2>
+    <pre class="term" id="s-trace"></pre>
+  </section>
+
+  <section>
+    <h2>10 · Errors</h2>
+    <pre class="term" id="s-error"></pre>
+  </section>
+
+  <section>
+    <h2>11 · 50 columns, and NO_COLOR</h2>
+    <p class="note">The banner collapses to one line below 44 columns. With <code>NO_COLOR</code> set, the structure carries the meaning on its own.</p>
+    <pre class="term narrow" id="s-narrow"></pre>
+    <pre class="term narrow mono-plain" id="s-nocolor"></pre>
+  </section>
+
+  <footer>Sources: <code>../design-kit/system/TUI.md</code>, <code>../design-kit/directions/casca.md</code>, <code>../design-kit/banners/casca.txt</code>, shell skin in <code>../design-kit/tokens/skins.css</code>. Plan: <code>plans/TUI.md</code>.</footer>
+</main>
+
+<script>
+const BANNER = [
+  ' ██████╗ █████╗ ███████╗ ██████╗ █████╗',
+  '██╔════╝██╔══██╗██╔════╝██╔════╝██╔══██╗',
+  '██║     ███████║███████╗██║     ███████║',
+  '██║     ██╔══██║╚════██║██║     ██╔══██║',
+  '╚██████╗██║  ██║███████║╚██████╗██║  ██║',
+  ' ╚═════╝╚═╝  ╚═╝╚══════╝ ╚═════╝╚═╝  ╚═╝',
+]
+const esc = t => String(t).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))
+const s = (cls, t) => `<span class="${cls}">${esc(t)}</span>`
+const W = 80
+const COLS = 80
+
+const banner = () => '<span class="banner">' + BANNER.map((r, i) => s(['t-title', 't-title', 't-accent', 't-accent', 't-border', 't-border'][i], r)).join('\n') + '</span>'
+const meta = (parts) => s('t-dim', parts.join(' · ')) + '\n'
+const rule = (n = W) => s('t-border', '─'.repeat(n)) + '\n'
+const prompt = (text) => s('t-text', '❯ ') + esc(text) + '\n'
+const label = () => s('t-title', ' ⬡ Casca ') + '\n'
+const row = (icon, verb, detail, time, state) => {
+  const vc = state === 'failed' ? 't-error' : 't-label'
+  const tc = state === 'failed' ? 't-error' : 't-dim'
+  return `  ${s('t-border', '┊')} <span class="ico">${icon}</span> ${s(vc, verb.padEnd(9))} ${esc(detail)}${time ? '  ' + s(tc, time) : ''}\n`
+}
+const spin = (verb) => `  ${s('t-accent', '⠧')} ${s('t-label', '⬡')} ${s('t-dim', verb + '…')}\n`
+function box(cls, title, lines, foot, width = 64) {
+  const inner = width - 2
+  const top = `╭─ ${title} ` + '─'.repeat(Math.max(0, inner - title.length - 3)) + '╮'
+  const bottom = `╰─ ${foot} ` + '─'.repeat(Math.max(0, inner - foot.length - 3)) + '╯'
+  let h = '  ' + s(cls, top) + '\n'
+  lines.forEach(([tcls, text]) => {
+    h += '  ' + s(cls, '│') + ' ' + s(tcls, text.padEnd(inner - 2)) + ' ' + s(cls, '│') + '\n'
+  })
+  return h + '  ' + s(cls, bottom) + '\n'
+}
+function status(segs, width = COLS) {
+  const out = segs.map(([cls, t]) => s(cls, t)).join(s('t-sdim', ' │ '))
+  return `<span class="t-status"> ${out} </span>`
+}
+const ok = (text) => s('t-ok', 'ok ') + esc(text) + '\n'
+const err = (what, fix, causes = []) =>
+  s('t-error', 'error: ') + esc(what) + '\n' + '  ' + esc(fix) + '\n' + causes.map(c => '  ' + s('t-dim', c) + '\n').join('')
+
+const META = ['⬡ casca v0.2.0', 'gpt-5.1', 'your key: openai', 'macOS 27', 'screen ✓ input ✓']
+const TASK = 'rename every file in ~/Desktop/shots to its date, then stop'
+
+const set = (id, html) => { document.getElementById(id).innerHTML = html }
+
+set('s-empty',
+  banner() + meta(META) + rule() + s('t-text', '❯ ') + '<span class="t-sel"> </span>\n\n' +
+  status([['t-strong', 'gpt-5.1'], ['', 'your key: openai'], ['', 'apps: any (asked per task)'], ['', '0 gates'], ['t-sdim', '? help']]))
+
+set('s-run',
+  s('t-shell', '$ ') + `casca run "${TASK}" --app Finder\n` +
+  meta(META) +
+  label() +
+  row('👁', 'read', 'Finder · "shots" · 1280×832 · 121 KB', '0.4s') +
+  row('👆', 'click', '"shots" folder in Finder', '0.1s') +
+  row('✓', 'verify', '"shots" window shows 14 items', '0.3s') +
+  row('⌨\uFE0F', 'key', 'cmd+a in Finder', '0.1s') +
+  row('👆', 'click', 'right · "IMG_0412.png" in Finder', '0.1s') +
+  spin('locating'))
+
+set('s-gate',
+  label() +
+  row('🔎', 'locate', '"Rename 14 Items…" menu item', '0.1s') +
+  box('t-warn', 'approve?', [['t-text', 'click  "Rename 14 Items…" in Finder'], ['t-dim', 'renames 14 files · undo with ⌘Z in Finder']],
+      '[y] approve once · [a] always for this task · [n/esc] deny'))
+
+set('s-hand',
+  label() +
+  row('👁', 'read', 'Dropbox · "Sign in" · 1280×832', '0.5s') +
+  row('⌨\uFE0F', 'type', 'into "Password" in Dropbox', 'refused', 'failed') +
+  '  ' + s('t-dim', '  secure field: Casca never types into it, whatever the task says') + '\n' +
+  box('t-label', 'your turn', [['t-text', 'Sign in to Dropbox, then come back here.'], ['t-dim', 'Casca resumes from a fresh screenshot.']],
+      '[enter] I\'m done · [esc] stop task'))
+
+set('s-stop',
+  label() +
+  row('👆', 'click', '"Format" menu in TextEdit', '0.1s') +
+  row('✓', 'verify', 'expected the Format menu open', 'not held', 'failed') +
+  row('👆', 'click', '"Format" menu in TextEdit', '0.1s · retry 1 of 1') +
+  row('✓', 'verify', 'Format menu open', '0.2s') +
+  spin('pressing') +
+  s('t-warn', '  stopped') + ' ' + s('t-dim', 'esc pressed between input events') + '\n' +
+  '  Stopped. 4 of 6 steps finished; nothing was undone.\n' +
+  '  ' + s('t-dim', 'trace: ~/Library/Application Support/casca/runs/run_20261016_221804_7f3a') + '\n')
+
+set('s-done',
+  label() +
+  row('👆', 'click', '"Rename" button in Finder', '0.1s') +
+  row('✓', 'verify', '14 files named 2026-10-*.png', '0.6s') +
+  '\n  Renamed 14 files in ~/Desktop/shots to their capture date.\n' +
+  '  ' + s('t-dim', 'evidence: the Finder window lists 2026-10-01.png to 2026-10-14.png') + '\n\n' +
+  ok('done in 9 steps · 41 s · 1 approval · 1.1 MB sent to api.openai.com'))
+
+set('app-log',
+  '<span class="pane-title">log</span>' +
+  prompt(TASK) + label() +
+  row('👁', 'read', 'Finder · "shots"', '0.4s') +
+  row('👆', 'click', '"shots" folder', '0.1s') +
+  row('✓', 'verify', '14 items shown', '0.3s') +
+  row('⌨\uFE0F', 'key', 'cmd+a', '0.1s') +
+  '<span class="t-sel">' + row('🔎', 'locate', '"Rename 14 Items…"', '0.1s').replace(/\n$/, '') + '</span>\n' +
+  box('t-warn', 'approve?', [['t-text', 'click "Rename 14 Items…" Finder'], ['t-dim', 'renames 14 files']], '[y] once · [a] always · [n] deny', 40))
+
+set('app-rail',
+  '<span class="pane-title">step 5</span>' +
+  s('t-title', 'click') + '\n\n' +
+  s('t-dim', 'target  ') + '"Rename 14 Items…"\n' +
+  s('t-dim', 'role    ') + 'menu item\n' +
+  s('t-dim', 'app     ') + 'Finder\n' +
+  s('t-dim', 'model   ') + '(533, 186) image px\n' +
+  s('t-dim', 'screen  ') + '(612, 214) points\n' +
+  s('t-dim', 'expect  ') + 'rename sheet opens\n' +
+  s('t-dim', 'gate    ') + s('t-warn', 'irreversible') + '\n' +
+  s('t-dim', 'sent    ') + '121 KB → api.openai.com\n\n' +
+  s('t-dim', 'o open frame · i hide'))
+
+set('app-composer', s('t-text', '❯ ') + s('t-dim', 'esc stops the task · y / a / n answers the gate'))
+document.getElementById('app-status').innerHTML =
+  [['t-strong', 'gpt-5.1'], ['', 'your key: openai'], ['', 'step 5/30'], ['', '$0.03'], ['', '412 KB sent'], ['t-swarn', '1 gate'], ['t-sdim', 'esc stop']]
+    .map(([c, t]) => s(c, t)).join(s('t-sdim', ' │ '))
+
+set('s-doctor',
+  s('t-shell', '$ ') + 'casca doctor\n' +
+  [
+    ['ok', 'macOS', '27.0 · Apple M5 · Python 3.14.8'],
+    ['ok', 'displays', '1 · 1470×956 points · scale 2.0'],
+    ['error', 'screen', 'capture is blank: Screen Recording not granted to iTerm'],
+    ['', '', 'System Settings › Privacy & Security › Screen Recording › enable iTerm, then restart it'],
+    ['ok', 'input', 'Accessibility granted to iTerm'],
+    ['ok', 'pointer', 'moved to (735, 478), read back (735, 478)'],
+    ['ok', 'hotkey', 'ctrl+option+esc registered'],
+    ['ok', 'model', 'gpt-5.1 at api.openai.com answered in 0.8s'],
+    ['ok', 'console', 'UTF-8 · truecolor · dark'],
+  ].map(([st, k, v]) => st === '' ? `${' '.repeat(18)}${s('t-dim', v)}\n`
+      : `  ${s(st === 'ok' ? 't-ok' : 't-error', st.padEnd(5))} ${s('t-label', k.padEnd(9))} ${esc(v)}\n`).join('') +
+  '\n' + s('t-error', '1 check failed.') + ' Casca will not run until the screen check passes.\n')
+
+set('s-trace',
+  s('t-shell', '$ ') + 'casca trace run_20261016_221804_7f3a\n' +
+  meta(['rename shots by date', 'gpt-5.1', 'macOS 27', '9 steps', '41 s', 'done']) +
+  [
+    ['1', 'read', 'Finder "shots"', '121 KB', 'ok'],
+    ['2', 'click', '"shots" folder', '', 'ok'],
+    ['3', 'verify', '14 items shown', '', 'held'],
+    ['4', 'key', 'cmd+a', '', 'ok'],
+    ['5', 'gate', 'click "Rename 14 Items…"', '', 'approved once'],
+    ['6', 'click', '"Rename 14 Items…"', '', 'ok'],
+    ['7', 'verify', 'rename sheet opens', '', 'held'],
+    ['8', 'click', '"Rename" button', '', 'ok'],
+    ['9', 'verify', '14 files named by date', '', 'held'],
+  ].map(([n, v, d, b, o]) => {
+    const marker = v === 'gate' ? s('t-warn', '▌') : ' '
+    return `${marker}${s('t-dim', n.padStart(2))} ${s(v === 'gate' ? 't-warn' : 't-label', v.padEnd(7))} ${esc(d.padEnd(30))} ${s('t-dim', b.padEnd(7))} ${s(o === 'ok' || o === 'held' ? 't-ok' : 't-warn', o)}\n`
+  }).join('') +
+  s('t-dim', '\n--open writes trace.html and opens it in the browser') + '\n')
+
+set('s-error',
+  s('t-shell', '$ ') + 'casca run "open the release notes" --profile hf\n' +
+  err('model endpoint did not answer: router.huggingface.co returned 401',
+      'set HF_TOKEN, or change profiles.hf.key in ~/Library/Application Support/casca/casca.toml',
+      ['caused by: 401 Unauthorized', 'caused by: key reference env:HF_TOKEN is empty']) +
+  '\n' + s('t-shell', '$ ') + 'casca run "click the blue button"\n' +
+  err('stopped: the same click repeated 3 times with no change on screen',
+      'the target may not respond to clicks; try naming the app with --app, or run with --confirm-each-step',
+      ['outcome: stuck after 7 steps · trace run_20261016_223011_02c1']))
+
+const narrow = (plain) =>
+  s('t-accent', '⬡') + ' ' + s('t-title', 'casca') + '\n' +
+  meta(['v0.2.0', 'qwen3-vl:8b', 'local']) +
+  rule(50) +
+  prompt('open TextEdit and type hello') +
+  label() +
+  row('▣', 'open', 'TextEdit', '1.2s') +
+  row('✓', 'verify', 'new document window', '0.4s') +
+  row('⌨\uFE0F', 'type', '"hello" · 5 chars', '0.2s') +
+  ok('done in 3 steps · 4 s · 0 B sent')
+set('s-narrow', narrow())
+set('s-nocolor', narrow())
+
+const root = document.documentElement
+document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
+  const m = b.dataset.mode
+  if (m === 'auto') root.removeAttribute('data-theme'); else root.setAttribute('data-theme', m)
+  document.querySelectorAll('.seg button').forEach(x => x.setAttribute('aria-pressed', String(x === b)))
+  try { localStorage.setItem('casca-tui-mode', m) } catch (e) {}
+}))
+try {
+  const saved = localStorage.getItem('casca-tui-mode')
+  if (saved) document.querySelector(`.seg button[data-mode="${saved}"]`)?.click()
+} catch (e) {}
+</script>
+</body>
+</html>

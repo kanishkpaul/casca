@@ -1,6 +1,7 @@
 import json
 import time
 from rich.console import Console
+from rich.markup import escape
 from rich.panel import Panel
 from pydantic import ValidationError, TypeAdapter
 
@@ -55,15 +56,15 @@ class CascaAgent:
             adapter = TypeAdapter(ActionType)
             return adapter.validate_python(data)
         except (json.JSONDecodeError, ValidationError) as e:
-            console.print(f"[red]Error parsing action:[/red] {e}")
+            console.print(f"[red]Error parsing action:[/red] {escape(str(e))}")
             return None
 
     def run(self, task: str):
-        console.print(Panel(f"Starting Casca Agent\nTask: [bold]{task}[/bold]\nMax steps: {self.max_steps}"))
+        console.print(Panel(f"Starting Casca Agent\nTask: [bold]{escape(str(task))}[/bold]\nMax steps: {self.max_steps}"))
         
         is_safe, reason = self.safety.check_task(task)
         if not is_safe:
-            console.print(f"[bold red]Task rejected by safety policy:[/bold red] {reason}")
+            console.print(f"[bold red]Task rejected by safety policy:[/bold red] {escape(str(reason))}")
             return
 
         self.logger.log_metadata(task, self.max_steps, self.model.__class__.__name__)
@@ -79,7 +80,7 @@ class CascaAgent:
             result = self.model.propose_action(task, screenshot, step, self.history, screen_size)
             
             if "error" in result:
-                console.print(f"[bold red]Model error:[/bold red] {result['error']}")
+                console.print(f"[bold red]Model error:[/bold red] {escape(str(result['error']))}")
                 break
                 
             raw_output = result["raw_output"]
@@ -87,18 +88,18 @@ class CascaAgent:
             
             if not action:
                 console.print("[bold red]Failed to parse action. Stopping.[/bold red]")
-                console.print(f"Raw output:\n{raw_output}")
+                console.print(f"Raw output:\n{escape(str(raw_output))}")
                 break
 
             console.print(f"[green]Proposed action:[/green] {action.action}")
-            console.print(f"[green]Reason:[/green] {action.reason}")
-            console.print(action.model_dump_json(indent=2))
+            console.print(f"[green]Reason:[/green] {escape(str(action.reason))}")
+            console.print(action.model_dump_json(indent=2), markup=False)
 
             action_is_safe, safety_reason = self.safety.check_action(action, task)
             safety_log = {"allowed": action_is_safe, "reason": safety_reason}
             
             if not action_is_safe:
-                console.print(f"[bold red]Action blocked by safety policy:[/bold red] {safety_reason}")
+                console.print(f"[bold red]Action blocked by safety policy:[/bold red] {escape(str(safety_reason))}")
                 self.logger.log_step(step, task, screenshot, raw_output, action.model_dump(), safety_log, {"status": "blocked"})
                 break
 
@@ -125,14 +126,14 @@ class CascaAgent:
             })
 
             if action.action == "done":
-                console.print(f"[bold green]Task completed![/bold green]\nAnswer: {action.answer}")
+                console.print(f"[bold green]Task completed![/bold green]\nAnswer: {escape(str(action.answer))}")
                 break
             elif action.action == "fail":
-                console.print(f"[bold red]Agent reported failure:[/bold red]\nReason: {action.reason}")
+                console.print(f"[bold red]Agent reported failure:[/bold red]\nReason: {escape(str(action.reason))}")
                 break
                 
             if execution_log.get("status") != "success":
-                console.print(f"[bold red]Execution failed:[/bold red] {execution_log.get('error')}")
+                console.print(f"[bold red]Execution failed:[/bold red] {escape(str(execution_log.get('error')))}")
                 
             time.sleep(self.step_delay)
             

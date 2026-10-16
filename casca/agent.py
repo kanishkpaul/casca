@@ -45,6 +45,7 @@ class CascaAgent:
     def parse_action(self, raw_output: str) -> ActionType | None:
         try:
             # Simple extraction: find the first { and last }
+            raw_output = raw_output or ""
             start = raw_output.find("{")
             end = raw_output.rfind("}")
             

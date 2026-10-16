@@ -51,5 +51,5 @@ def run_agent(tmp_path):
                            log_dir=str(tmp_path), step_delay=0, **kw)
         agent.run(task)
         runs = list(tmp_path.iterdir())
-        return load_run(runs[0]) if runs else (None, [])
+        return load_run(runs[0]) if runs and (runs[0] / "steps.jsonl").exists() else (None, [])
     return run

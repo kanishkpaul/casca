@@ -91,7 +91,7 @@ Please provide the next action in JSON format.
             
             result = response.json()
             if "choices" in result and len(result["choices"]) > 0:
-                output = result["choices"][0].get("message", {}).get("content", "")
+                output = result["choices"][0].get("message", {}).get("content") or ""
             else:
                 return {"error": f"Unexpected response format from HF API: {result}"}
                 

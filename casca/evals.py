@@ -43,6 +43,7 @@ def app_name(pid: int) -> str:
         for _ in range(30):
             app = NSRunningApplication.runningApplicationWithProcessIdentifier_(pid)
             if app and app.localizedName():
+                app.activateWithOptions_(0)  # the first task otherwise starts behind the terminal
                 return app.localizedName()
             time.sleep(0.1)
     return Path(sys.executable).stem

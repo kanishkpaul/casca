@@ -49,7 +49,7 @@ Examples:
 
 {"action":"hotkey","keys":["<mod>","l"],"reason":"Focus the browser address bar.","expect":"The address bar is selected"}
 
-{"action":"scroll","amount":-5,"reason":"Scroll down five notches; more content is likely below.","expect":"Lower parts of the page are visible"}
+{"action":"scroll","amount":5,"reason":"Scroll down five notches; more content is likely below.","expect":"Lower parts of the page are visible"}
 
 {"action":"open_app","name":"Calculator","reason":"Open the app by name instead of looking for its icon.","expect":"A Calculator window is in front"}
 

@@ -72,7 +72,8 @@ class DesktopController:
         pyautogui.hotkey(*map(valid_key, keys))
 
     def scroll(self, amount: int) -> None:
-        pyautogui.scroll(amount * SCROLL_UNIT)
+        # The model's amount is positive for down, as on the web; PyAutoGUI's is positive for up.
+        pyautogui.scroll(-amount * SCROLL_UNIT)
 
     def input_problem(self) -> str | None:
         """Why input would be dropped, with the fix, or None. macOS drops synthetic events silently."""

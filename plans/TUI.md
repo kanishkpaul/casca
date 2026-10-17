@@ -132,3 +132,18 @@ The palette comes from the design kit, not from hex values in Casca's code:
 - Textual's behaviour in legacy Windows `conhost` is unchecked; tui-07 decides whether
   interactive mode requires Windows Terminal.
 - The design kit's `kit init` has not been run on `main`.
+
+## Status, 2026-10-17
+
+Casca lives only in the terminal. The Flask viewer is removed, and past runs are listed and
+replayed by `casca trace` and ctrl+t in the TUI.
+
+| Id | State |
+|---|---|
+| tui-01 | Done: the agent emits events through a `UI` object; `casca run --jsonl` |
+| tui-02 | Done: the kit is on `main` in `design/`. `casca/term.py` reads the palette and identity from `tokens/tokens.json`, which the wheel carries. Colour detection as `system/TUI.md` orders it. The master needed no Python target |
+| tui-03 | Done: `LineUI` |
+| tui-04 | Done: `casca doctor` in the kit colours; `casca trace` lists and replays runs |
+| tui-05 | Done: `casca` opens the Textual app. Checked with Textual's test pilot and SVG screenshots, not yet in a real terminal session against the desktop |
+| tui-06 | Done: gates, hand-back and stop answered by keys in the app, by prompts in line mode, and refused without a terminal |
+| tui-07 | ASCII fallback and a narrow status bar done. Not seen on Windows Terminal or a legacy console |

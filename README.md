@@ -63,15 +63,27 @@ terminal, so the grant goes to the terminal app (Terminal, iTerm, Ghostty, VS Co
 
 ## Usage
 
+Casca lives in the terminal.
+
 ```bash
+casca --profile local-qwen --app TextEdit                  # the interactive TUI
+casca run "Open TextEdit and type hello" --app TextEdit    # one task, printed row by row
 casca run "Open Calculator" --provider mock --dry-run      # mock model, nothing executed
-casca run "Open TextEdit and type hello" --confirm-each-step
-pytest -q                                                  # tests, on fakes only
+casca run "..." --jsonl                                    # one JSON object per event, for scripts
+casca trace                                                # recent runs; casca trace <run> replays one
 casca doctor                                               # permissions, displays, pointer, model
+casca eval --profile local-qwen                            # fixture tasks and attack scenes
+pytest -q                                                  # tests, on fakes only
 ```
 
+In the TUI, type a task and press Enter. A gate asks before an act it cannot clear: `y` approves
+once, `n`, Enter or Esc deny. Esc during a run stops it before the next act, and so does
+ctrl+option+esc (ctrl+alt+esc on Windows) from any app. ctrl+t lists runs, ctrl+o opens the last
+screenshot, ctrl+r hides the side rail. Colours follow `NO_COLOR`, `--color` and the terminal's
+light or dark setting (`CASCA_THEME` overrides it).
+
 Runs are stored in the OS data directory (`~/Library/Application Support/casca/logs` on macOS),
-or `CASCA_LOG_DIR`. Move the mouse into a screen corner, or press Ctrl-C, to stop a run.
+or `CASCA_LOG_DIR`.
 
 ## Tested
 
@@ -115,8 +127,9 @@ attack scenes on the same machine and model. Details and what it could not test 
 ## Layout
 
 ```text
-casca/            agent loop, actions, coordinates, safety, screen capture, input
+casca/            agent loop, actions, coordinates, gates, screen capture, input, the TUI
 casca/models/     OpenAI-compatible and mock providers
 tests/            tests on a fake screen and desktop
 plans/            plans and design mockups
+design/           the shared design kit; casca reads tokens/tokens.json
 ```

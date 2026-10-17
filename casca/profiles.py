@@ -18,7 +18,7 @@ CONFIG = Path(os.getenv("CASCA_CONFIG") or Path(user_config_dir("casca")) / "cas
 
 
 def load_profile(name: str, path: Path = CONFIG) -> dict:
-    profiles = tomllib.loads(path.read_text()).get("profiles", {}) if path.exists() else {}
+    profiles = tomllib.loads(path.read_text(encoding="utf-8")).get("profiles", {}) if path.exists() else {}
     if name not in profiles:
         raise ValueError(f"no profile {name!r} in {path}; known: {', '.join(profiles) or 'none'}")
     return profiles[name]

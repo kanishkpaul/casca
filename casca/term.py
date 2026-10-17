@@ -10,7 +10,7 @@ from rich.theme import Theme
 
 HERE = Path(__file__).parent
 # Wheels carry the tokens as casca/tokens.json; a checkout reads them from design/.
-TOKENS = json.loads(next(p for p in (HERE / "tokens.json", HERE.parent / "design/tokens/tokens.json") if p.exists()).read_text())
+TOKENS = json.loads(next(p for p in (HERE / "tokens.json", HERE.parent / "design/tokens/tokens.json") if p.exists()).read_text(encoding="utf-8"))
 IDENTITY = TOKENS["identities"]["casca"]
 PALETTES = TOKENS["skins"][IDENTITY["defaultSkin"]]["tui"]
 

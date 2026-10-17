@@ -22,9 +22,13 @@ It runs on the model you choose: hosted with your own key, or local on your mach
 ## How a step works
 
 ```text
-  screenshot ──▶ model proposes one action ──▶ gates check the real target ──▶ act ──▶ settle ──▶ verify
-       ▲                                                                                          │
-       └──────────────────────────────────────── next step ◀──────────────────────────────────────┘
+  screenshot
+      │
+  the model proposes one action, and what the screen should show after it
+      │
+  the gates ask the OS what is really under the pointer, then allow, ask you, or refuse
+      │
+  act ──▶ wait for the screen to settle ──▶ next step checks the expectation
 ```
 
 Each action names what the screen should show afterwards, and the next step says whether it did.

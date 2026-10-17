@@ -136,7 +136,7 @@ class CascaApp(App):
 
     def refresh_status(self) -> None:
         p = term.PALETTES[term.polarity()]
-        parts = [(self.model, p["status_bar_strong"]), (f"step {self.step + 1}", None)]
+        parts = [(self.model, p["status_bar_strong"])] + ([(f"step {self.step + 1}", None)] if self.agent else [])
         if self.size.width >= 60:  # narrow terminals keep the model, the step and anything waiting on you
             parts[1:1] = [(self.locality, None)]
             parts.append((f"{self.sent / 1000:.0f} KB sent", None))

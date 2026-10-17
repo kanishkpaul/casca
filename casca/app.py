@@ -136,8 +136,10 @@ class CascaApp(App):
 
     def refresh_status(self) -> None:
         p = term.PALETTES[term.polarity()]
-        parts = [(self.model, p["status_bar_strong"]), (self.locality, None), (f"step {self.step + 1}", None),
-                 (f"{self.sent / 1000:.0f} KB sent", None)]
+        parts = [(self.model, p["status_bar_strong"]), (f"step {self.step + 1}", None)]
+        if self.size.width >= 60:  # narrow terminals keep the model, the step and anything waiting on you
+            parts[1:1] = [(self.locality, None)]
+            parts.append((f"{self.sent / 1000:.0f} KB sent", None))
         if self.mode == "approve":
             parts.append(("1 gate · y approve · n deny", p["status_bar_warn"]))
         elif self.mode == "pause":

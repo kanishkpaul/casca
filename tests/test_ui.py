@@ -22,3 +22,11 @@ def test_line_mode_draws_rows_without_reading_model_text_as_markup(run_agent):
     out = ui.out.file.getvalue()
     assert '┊ ↖ click     "Format" in TextEdit' in out
     assert "verify    the menu opens  held" in out and "opened [/b] it" in out and out.splitlines()[-1].startswith("ok done in 2 steps")
+
+
+def test_consoles_without_the_glyphs_get_ascii(run_agent):
+    ui = LineUI("never")
+    ui.ascii, ui.out.file = True, io.StringIO()
+    run_agent(ScriptedModel(CLICK, DONE), ui=ui)
+    out = ui.out.file.getvalue()
+    assert "| > click" in out and not set(out) & set("┊⬡↖")

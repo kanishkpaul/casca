@@ -14,6 +14,8 @@ VERBS = {"click": ("↖", "click"), "double_click": ("↖", "click"), "right_cli
          "drag": ("↘", "drag"), "move_mouse": ("↗", "point"), "type": ("⌨", "type"), "press": ("⏎", "key"),
          "hotkey": ("⏎", "key"), "scroll": ("↕", "scroll"), "wait": ("◷", "wait"), "open_app": ("▣", "open"),
          "done": ("✓", "done"), "fail": ("✗", "fail"), "handback": ("⇄", "hand back")}
+# One character for one, so a Text's style spans still line up after translating.
+ASCII = str.maketrans("⬡┊❯─╭╮╰╯│↖↗↘⌨⏎↕◷▣✓✗⇄◎·×…", "*|>-++++|>>>TKSWOvxHR-x.")
 ENDS_OK, ENDS_BY_USER = {"done"}, {"stopped", "taken_over", "handed_back", "aborted", "interrupted"}
 
 
@@ -55,8 +57,15 @@ class LineUI(UI):
 
     def __init__(self, color: str = "auto"):
         self.out, self.spinner = term.make_console(color), None
+        try:
+            "⬡┊❯─╭↖⌨".encode(self.out.encoding)
+            self.ascii = False
+        except (UnicodeEncodeError, LookupError):
+            self.ascii = True  # legacy Windows consoles on a code page that lacks these glyphs
 
     def write(self, text: Text) -> None:
+        if self.ascii:
+            text = Text(text.plain.translate(ASCII), style=text.style, spans=text.spans)
         self.out.print(text)
 
     def _row(self, icon: str, verb: str, text: str, tail: str | None = None, failed: bool = False) -> None:

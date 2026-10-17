@@ -20,5 +20,5 @@ def test_line_mode_draws_rows_without_reading_model_text_as_markup(run_agent):
     element = {"app": "TextEdit", "role": "AXButton", "name": "Format", "secure": False}
     run_agent(ScriptedModel(CLICK, DONE), ui=ui, desktop=FakeDesktop(element=element))
     out = ui.out.file.getvalue()
-    assert '┊ 👆 click     "Format" in TextEdit' in out
+    assert '┊ ↖ click     "Format" in TextEdit' in out
     assert "verify    the menu opens  held" in out and "opened [/b] it" in out and out.splitlines()[-1].startswith("ok done in 2 steps")

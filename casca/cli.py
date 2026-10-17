@@ -7,10 +7,29 @@ from casca.models.mock_provider import MockVisionProvider
 from casca.config import config
 from casca.profiles import load_profile, make_model
 from casca.term import make_console
-from casca.ui import JsonlUI, LineUI
+from casca.ui import JsonlUI, LineUI, run_rows
 
-app = typer.Typer(help="Casca: Screenshot-based desktop-control agent.")
+app = typer.Typer(help="Casca: a desktop agent that lives in your terminal.", invoke_without_command=True)
 console = make_console()
+
+@app.callback()
+def main(
+    ctx: typer.Context,
+    profile: str = typer.Option(None, "--profile", help="A profile from casca.toml."),
+    apps: list[str] = typer.Option(None, "--app", help="An app Casca may act in. Repeat for more. Default: any."),
+):
+    """With no command, opens the interactive TUI."""
+    if ctx.invoked_subcommand:
+        return
+    from casca.app import CascaApp
+
+    settings = load_profile(profile) if profile else {}
+    model = make_model(settings) if profile else OpenAICompatProvider(config.BASE_URL, config.MODEL)
+    host = getattr(model, "destination", "")
+    locality = "local" if host in ("127.0.0.1", "localhost") else f"your key: {host}"
+    CascaApp(lambda ui: CascaAgent(model, coords=settings.get("coords", config.COORDS), apps=apps, ui=ui),
+             model.model, locality, config.LOG_DIR).run()
+
 
 @app.command()
 def run(
@@ -112,15 +131,8 @@ def trace(
 
     logs = Path(config.LOG_DIR)
     if not run_id:
-        for path in sorted(logs.glob("run_*"), reverse=True)[:last]:
-            try:
-                meta, steps = load_run(path)
-            except (OSError, ValueError) as e:
-                console.print(Text(f"{path.name}  could not load: {e}", "ui_error"))
-                continue
-            outcome = meta.get("outcome", "unfinished")
-            tone = "ui_ok" if outcome == "done" else "ui_error" if outcome in ("crashed", "model_error", "parse_error") else "ui_warn"
-            console.print(Text(f"{path.name}  ").append(f"{outcome:12}", tone).append(f" {len(steps):>3} steps  {meta['task']}"))
+        for row in run_rows(logs, last):
+            console.print(row)
         return
     meta, steps = load_run(logs / run_id)
     ui = LineUI()

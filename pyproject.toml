@@ -21,6 +21,7 @@ dependencies = [
     "pyobjc-framework-ApplicationServices>=12.2,<13; sys_platform == 'darwin'",
     "platformdirs>=4.13,<5",
     "keyring>=25.7,<26",
+    "textual>=8.2,<9",
 ]
 
 [project.optional-dependencies]

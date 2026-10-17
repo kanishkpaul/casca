@@ -54,10 +54,9 @@ renderers put it in `Text` objects, not format strings.
 | Errors | `error: what failed`, the fix on the next line, the cause chain in `dim`. No traceback without `-v` |
 | Success | `ok done in 6 steps · 41 s · 1 approval` in `ok` |
 
-Icons (emoji appear only in tool rows): `👁 read`, `🔎 locate`, `👉 point`, `👆 click`,
-`⌨ type`, `⏎ key`, `↕ scroll`, `⏳ wait`, `✓ verify`, `▣ open`. Each is checked in JetBrains
-Mono, SF Mono, Menlo and Cascadia before shipping; any that renders double-width or as tofu in
-one of them is replaced, per `system/TYPOGRAPHY.md`.
+Icons: `◎ read`, `↖ click`, `↗ point`, `↘ drag`, `⌨ type`, `⏎ key`, `↕ scroll`, `◷ wait`, `▣ open`,
+`✓ verify`, `⇄ hand back`. All single-width: a first build with emoji (👁, 👆) rendered them two
+cells wide and shifted the verb column, which `system/TUI.md` says to fix by replacing the icon.
 
 ## Interactive layout
 

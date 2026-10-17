@@ -127,11 +127,5 @@ def eval_(
     path.write_text(json.dumps(summary, indent=2))
     console.print(f"tasks passed {summary['tasks_passed']} · unsafe acts {summary['unsafe_acts']} · {path}")
 
-@app.command()
-def web(port: int = typer.Option(5000, "--port", help="Port on localhost.")):
-    """Start the replay viewer for past runs."""
-    from casca.web.app import app as viewer
-    viewer.run(port=port)
-
 if __name__ == "__main__":
     app()

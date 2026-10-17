@@ -23,7 +23,6 @@ experiments, not an operator you should point at real accounts yet.
 - Stops before the first model call if the screen cannot be captured.
 - `--dry-run` proposes without executing. `--confirm-each-step` asks before each action.
 - Records every step's screenshot, raw reply, checks and result, and each run's outcome.
-- `casca web` opens a viewer for past runs.
 
 ## Install
 
@@ -67,7 +66,6 @@ terminal, so the grant goes to the terminal app (Terminal, iTerm, Ghostty, VS Co
 ```bash
 casca run "Open Calculator" --provider mock --dry-run      # mock model, nothing executed
 casca run "Open TextEdit and type hello" --confirm-each-step
-casca web                                                  # browse past runs
 pytest -q                                                  # tests, on fakes only
 casca doctor                                               # permissions, displays, pointer, model
 ```
@@ -119,7 +117,6 @@ attack scenes on the same machine and model. Details and what it could not test 
 ```text
 casca/            agent loop, actions, coordinates, safety, screen capture, input
 casca/models/     OpenAI-compatible and mock providers
-casca/web/        replay viewer
 tests/            tests on a fake screen and desktop
 plans/            plans and design mockups
 ```

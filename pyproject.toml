@@ -19,7 +19,6 @@ dependencies = [
     "pyautogui>=0.9.54,<0.10",
     "pyobjc-framework-Quartz>=12.2,<13; sys_platform == 'darwin'",
     "pyobjc-framework-ApplicationServices>=12.2,<13; sys_platform == 'darwin'",
-    "flask>=3.1,<4",
     "platformdirs>=4.13,<5",
     "keyring>=25.7,<26",
 ]

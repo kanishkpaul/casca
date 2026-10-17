@@ -27,5 +27,8 @@ dependencies = [
 dev = ["pytest>=9.1,<10"]
 anthropic = ["anthropic>=1.15,<2"]
 
+[tool.hatch.build.targets.wheel.force-include]
+"design/tokens/tokens.json" = "casca/tokens.json"
+
 [project.scripts]
 casca = "casca.cli:app"

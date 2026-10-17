@@ -14,3 +14,7 @@ jobs:
           python-version: "3.13"
       - run: pip install -e ".[dev,anthropic]"
       - run: pytest -q -rs
+      - name: The wheel carries the design tokens
+        run: |
+          pip wheel --no-deps -w dist .
+          python -c "import zipfile, glob; assert 'casca/tokens.json' in zipfile.ZipFile(glob.glob('dist/*.whl')[0]).namelist()"

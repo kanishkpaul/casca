@@ -31,9 +31,7 @@ It runs on the model you choose: hosted with your own key, or local on your mach
   act ──▶ wait for the screen to settle ──▶ next step checks the expectation
 ```
 
-Each action names what the screen should show afterwards, and the next step says whether it did.
-The gates do not trust the model's reasons. They ask the OS what is under the pointer or holding
-focus, then allow, ask you, or refuse.
+The gates never read the model's stated reason, because text on the screen can steer it.
 
 ## Quick start
 

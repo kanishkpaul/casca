@@ -2,9 +2,6 @@ import json
 import sys
 import threading
 import time
-from rich.console import Console
-from rich.markup import escape
-from rich.panel import Panel
 from pyautogui import FailSafeException
 from pydantic import ValidationError, TypeAdapter
 
@@ -17,8 +14,8 @@ from casca.actions import ActionType
 from casca.config import config
 from casca import gates
 from casca.coords import POINT_FIELDS, to_screen
+from casca.ui import UI
 
-console = Console()
 ACTIONS = TypeAdapter(ActionType)
 PARSE_ATTEMPTS = 3
 STUCK_REPEATS = 3
@@ -44,6 +41,7 @@ class CascaAgent:
         log_dir: str = config.LOG_DIR,
         screen=None,
         desktop=None,
+        ui: UI | None = None,
     ):
         self.model = model
         self.max_steps = max_steps
@@ -61,6 +59,7 @@ class CascaAgent:
         self.safety = SafetyPolicy(unsafe=self.unsafe)
         self.log_dir = log_dir
         self.history = []
+        self.ui = ui or UI()
 
     def parse_action(self, raw_output: str | None) -> tuple[ActionType | None, str | None]:
         """Reads the first JSON object in the reply. Returns the action, or None and why not."""
@@ -89,24 +88,9 @@ class CascaAgent:
         decision, reason = gates.check(action, target, focused, self.apps)
         return decision, reason, target or focused
 
-    def _approve(self, action, reason: str) -> bool:
-        """Asks the user. Deny is the default, and a run with no terminal attached always denies."""
-        if not sys.stdin.isatty():
-            return False
-        console.print(f"[yellow]╭─ approve? ─[/yellow]\n[yellow]│[/yellow] {action.action} {escape(action.reason)}\n"
-                      f"[yellow]│[/yellow] [dim]{escape(reason)}[/dim]\n[yellow]╰─ \\[y] approve once · \\[n/enter] deny ─[/yellow]")
-        return console.input("> ").strip().lower() == "y"
-
     @staticmethod
     def _moved(a: tuple[int, int], b: tuple[int, int]) -> bool:
         return abs(a[0] - b[0]) > 5 or abs(a[1] - b[1]) > 5
-
-    def _pause(self, reason: str) -> bool:
-        """Hands control to the user. True to carry on from a fresh capture; no terminal means stop."""
-        console.print(f"[bold yellow]Your turn:[/bold yellow] {escape(reason)}")
-        if not sys.stdin.isatty():
-            return False
-        return console.input("Press Enter when done, or type stop: ").strip().lower() != "stop"
 
     def _watch_stop(self) -> None:
         while not self.finished.is_set():
@@ -127,11 +111,13 @@ class CascaAgent:
         return {"settle_s": round(time.monotonic() - start, 2), "changed": last != before}
 
     def run(self, task: str) -> str:
-        console.print(Panel(f"Starting Casca Agent\nTask: [bold]{escape(task)}[/bold]\nMax steps: {self.max_steps}"))
+        self.ui.emit("start", task=task, model=getattr(self.model, "model", self.model.__class__.__name__),
+                     destination=getattr(self.model, "destination", "none"), dry_run=self.dry_run, apps=self.apps)
+        started, self.end_message, self.sent_bytes = time.monotonic(), None, 0
 
         is_safe, reason = self.safety.check_task(task)
         if not is_safe:
-            console.print(f"[bold red]Task rejected by safety policy:[/bold red] {escape(str(reason))}")
+            self.ui.emit("end", outcome="rejected", message=reason, steps=0, seconds=0, sent_bytes=0)
             return "rejected"
 
         self.logger = RunLogger(log_dir=self.log_dir)
@@ -146,25 +132,25 @@ class CascaAgent:
         try:
             outcome = self._loop(task)
         except (KeyboardInterrupt, FailSafeException):
-            outcome = "interrupted"
-            console.print("[yellow]Interrupted. Stopping.[/yellow]")
+            outcome, self.end_message = "interrupted", "interrupted; nothing was undone"
         finally:
             self.finished.set()
             self.logger.finish(outcome)
+            self.ui.emit("end", outcome=outcome, message=self.end_message, steps=len(self.history),
+                         seconds=time.monotonic() - started, sent_bytes=self.sent_bytes, run_id=self.logger.run_id)
         return outcome
 
     def _loop(self, task: str) -> str:
         monitor = self.screen.get_screen_size()
         if not self.dry_run and (problem := self.desktop.input_problem()):
-            console.print(f"[bold red]Cannot send input:[/bold red] {problem}")
+            self.end_message = f"cannot send input: {problem}"
             return "no_input"
 
         started, self.left_at = time.monotonic(), None
         for step in range(self.max_steps):
             if time.monotonic() - started > self.max_seconds:
-                console.print(f"[yellow]Stopped: the {self.max_seconds} s time budget is used up.[/yellow]")
+                self.end_message = f"the {self.max_seconds} s time budget is used up"
                 return "time_budget"
-            console.print(f"\n[cyan]=== Step {step} ===[/cyan]")
             screenshot = self.screen.screenshot()
             width, height = (1000, 1000) if self.coords == "norm1000" else self.screen.image_size
 
@@ -176,74 +162,72 @@ class CascaAgent:
             # Checked every step: a frame that turns black mid-run can be the Windows UAC prompt,
             # which sits on a secure desktop Casca cannot capture or click.
             if problem := self.screen.capture_problem():
-                console.print(f"[bold red]Cannot see the screen:[/bold red] {problem}")
+                self.end_message = f"cannot see the screen: {problem}"
                 log(None, None, {"status": "blank_screen", "error": problem})
                 return "blank_screen"
 
-            console.print("[dim]Thinking...[/dim]")
+            self.ui.emit("observe", step=step, image_size=list(self.screen.image_size))
+            self.ui.emit("think", step=step)
             feedback = []
             for _ in range(PARSE_ATTEMPTS):
                 result = self.model.propose_action(task, screenshot, step, self.history + feedback, {"width": width, "height": height})
                 if "error" in result:
-                    console.print(f"[bold red]Model error:[/bold red] {escape(str(result['error']))}")
+                    self.end_message = f"the model did not answer: {result['error']}"
                     log(None, None, {"status": "model_error", "error": result["error"]})
                     return "model_error"
                 trace["sent_bytes"] = trace.get("sent_bytes", 0) + result.get("sent_bytes", 0)
+                self.sent_bytes += result.get("sent_bytes", 0)
                 raw_output = result["raw_output"]
                 action, problem = self.parse_action(raw_output)
                 if action:
                     break
-                console.print(f"[red]Invalid reply:[/red] {escape(problem)}")
+                self.ui.emit("invalid_reply", step=step, problem=problem)
                 feedback = [{"step": step, "action": "invalid reply", "execution": {"status": "error", "error": problem}}]
             else:
-                console.print(f"Raw output:\n{escape(str(raw_output))}")
+                self.end_message = f"three replies in a row could not be read; the last: {problem}"
                 log(None, None, {"status": "parse_error", "error": problem}, raw_output)
                 return "parse_error"
 
-            console.print(f"[green]Proposed action:[/green] {action.action}")
-            console.print(f"[green]Reason:[/green] {escape(action.reason)}")
-            console.print(action.model_dump_json(indent=2), markup=False)
+            if action.previous and self.history and isinstance(self.history[-1]["action"], dict):
+                self.ui.emit("verify", step=step, expect=self.history[-1]["action"].get("expect", ""), verdict=action.previous)
 
             action_is_safe, safety_reason = self.safety.check_action(action, task)
             safety_log = {"allowed": action_is_safe, "reason": safety_reason}
 
             if not action_is_safe:
-                console.print(f"[bold red]Action blocked by safety policy:[/bold red] {escape(str(safety_reason))}")
+                self.end_message = f"blocked: {safety_reason}"
                 log(action.model_dump(), safety_log, {"status": "blocked"}, raw_output)
                 return "blocked"
 
             decision, gate_reason, element = self._gate(action, (width, height), monitor)
             safety_log.update(gate=decision, gate_reason=gate_reason, element=element)
             refused = decision == "refuse" or (decision == "confirm" and not self.dry_run
-                                               and not self._approve(action, gate_reason))
+                                               and not self.ui.approve(action.model_dump(), gate_reason, element))
 
             if self.confirm_each_step and not self.dry_run:
-                confirm = console.input("[bold yellow]Execute this action? \\[y/N]: [/bold yellow]")
-                if confirm.lower() != 'y':
-                    console.print("[yellow]Action aborted by user. Stopping.[/yellow]")
+                if not refused and not self.ui.approve(action.model_dump(), "you asked to confirm each step", element):
+                    self.end_message = "you declined the step"
                     log(action.model_dump(), safety_log, {"status": "aborted"}, raw_output)
                     return "aborted"
 
             if refused:
-                console.print(f"[bold yellow]Not done:[/bold yellow] {escape(gate_reason)}")
+                self.ui.emit("refused", step=step, action=action.model_dump(), reason=gate_reason, element=element)
                 execution_log = {"status": "refused", "error": gate_reason}
             elif self.dry_run:
-                console.print("[yellow][DRY RUN] Skipping execution[/yellow]")
                 execution_log = {"status": "skipped"}
             else:
-                console.print("[dim]Executing...[/dim]")
                 if self.stop_requested.is_set():
-                    console.print("[bold yellow]Stopped by the stop keys.[/bold yellow] Nothing was undone.")
+                    self.end_message = "stopped by the stop keys; nothing was undone"
                     log(action.model_dump(), safety_log, {"status": "stopped"}, raw_output)
                     return "stopped"
                 if self.left_at and self._moved(self.desktop.cursor(), self.left_at):
-                    if not self._pause("you moved the mouse, so Casca paused."):
+                    if not self.ui.pause("You moved the mouse, so Casca paused."):
                         log(action.model_dump(), safety_log, {"status": "taken_over"}, raw_output)
                         return "taken_over"
                     self.left_at = None
                     continue
                 if problem := self.desktop.input_problem():
-                    console.print(f"[bold red]Cannot send input:[/bold red] {problem}")
+                    self.end_message = f"cannot send input: {problem}"
                     log(action.model_dump(), safety_log, {"status": "no_input", "error": problem}, raw_output)
                     return "no_input"
                 try:
@@ -264,25 +248,25 @@ class CascaAgent:
                 self.history[-1]["verified"] = action.previous
             log(action.model_dump(), safety_log, execution_log, raw_output)
             self.history.append({"step": step, "action": action.model_dump(), "execution": execution_log})
+            if not refused:
+                self.ui.emit("act", step=step, action=action.model_dump(), result=execution_log, element=element)
             recent = [signature(h["action"]) for h in self.history[-STUCK_REPEATS:] if isinstance(h["action"], dict)]
             if len(recent) == STUCK_REPEATS and len(set(recent)) == 1 and action.action not in ("wait", "done"):
-                console.print(f"[bold red]Stopped:[/bold red] the same {action.action} {STUCK_REPEATS} times in a row.")
+                self.end_message = f"the same {action.action} {STUCK_REPEATS} times in a row"
                 return "stuck"
 
             if action.action == "done":
-                console.print(f"[bold green]Task completed![/bold green]\nAnswer: {escape(action.answer)}")
+                self.end_message = action.answer
                 return "done"
             if action.action == "handback":
-                if self.dry_run or not self._pause(action.reason):
+                if self.dry_run or not self.ui.pause(action.reason):
+                    self.end_message = f"handed back: {action.reason}"
                     return "handed_back"
                 self.history[-1]["execution"] = {"status": "user_done", "note": "the user finished this and said to carry on"}
                 continue
             if action.action == "fail":
-                console.print(f"[bold red]Agent reported failure:[/bold red]\nReason: {escape(action.reason)}")
+                self.end_message = f"the model gave up: {action.reason}"
                 return "fail"
-            if execution_log["status"] not in ("success", "skipped"):
-                console.print(f"[bold red]Execution failed:[/bold red] {escape(str(execution_log.get('error')))}")
 
-
-        console.print("[yellow]Reached maximum steps without completion.[/yellow]")
+        self.end_message = f"{self.max_steps} steps used without finishing"
         return "max_steps"

@@ -7,6 +7,7 @@ from casca.models.openai_compat import OpenAICompatProvider
 from casca.models.mock_provider import MockVisionProvider
 from casca.config import config
 from casca.profiles import load_profile, make_model
+from casca.ui import JsonlUI, LineUI
 
 app = typer.Typer(help="Casca: Screenshot-based desktop-control agent.")
 console = Console()
@@ -25,6 +26,8 @@ def run(
     confirm_each_step: bool = typer.Option(False, "--confirm-each-step", help="Ask for confirmation before each action."),
     dry_run: bool = typer.Option(False, "--dry-run", help="Propose actions without executing them."),
     log_dir: str = typer.Option(config.LOG_DIR, "--log-dir", help="Directory to save logs."),
+    jsonl: bool = typer.Option(False, "--jsonl", help="One JSON object per event, for scripts."),
+    color: str = typer.Option("auto", "--color", help="auto, always or never."),
 ):
     """Run the Casca agent on a specific task."""
     if profile:
@@ -46,6 +49,7 @@ def run(
         dry_run=dry_run,
         coords=coords,
         apps=apps,
+        ui=JsonlUI() if jsonl else LineUI(color),
         log_dir=log_dir
     )
     

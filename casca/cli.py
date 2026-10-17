@@ -1,16 +1,16 @@
 import typer
-from rich.console import Console
-from rich.markup import escape
+from rich.text import Text
 from typing import Optional
 from casca.agent import CascaAgent
 from casca.models.openai_compat import OpenAICompatProvider
 from casca.models.mock_provider import MockVisionProvider
 from casca.config import config
 from casca.profiles import load_profile, make_model
+from casca.term import make_console
 from casca.ui import JsonlUI, LineUI
 
 app = typer.Typer(help="Casca: Screenshot-based desktop-control agent.")
-console = Console()
+console = make_console()
 
 @app.command()
 def run(
@@ -38,7 +38,7 @@ def run(
     elif provider == "api":
         model = OpenAICompatProvider(base_url, model_name)
     else:
-        console.print(f"[bold red]Unknown provider:[/bold red] {provider}")
+        console.print(Text("error: ", "ui_error").append(f"unknown provider {provider}; use api or mock"))
         raise typer.Exit(1)
         
     agent = CascaAgent(
@@ -91,12 +91,50 @@ def doctor(
     except httpx.HTTPError as e:
         rows.append(("model", f"{base_url}: {type(e).__name__}", ""))
     for name, problem, detail in rows:
-        mark = "[red]error[/red]" if problem else "[green]ok   [/green]"
-        console.print(f"{mark} {name:9} {escape(problem or detail)}")
+        console.print(Text("error" if problem else "ok   ", "ui_error" if problem else "ui_ok").append(f" {name:9} ", "ui_label")
+                      .append(problem or detail))
     failed = sum(1 for _, problem, _ in rows if problem)
     if failed:
-        console.print(f"[red]{failed} check{'s' if failed > 1 else ''} failed.[/red]")
+        console.print(Text(f"{failed} check{'s' if failed > 1 else ''} failed.", "ui_error"))
         raise typer.Exit(1)
+
+
+@app.command()
+def trace(
+    run_id: str = typer.Argument(None, help="A run id. Leave it out to list recent runs."),
+    last: int = typer.Option(20, "--last", help="How many runs to list."),
+):
+    """List past runs, or replay one as tool rows."""
+    from datetime import datetime
+    from pathlib import Path
+
+    from casca.replay import load_run
+
+    logs = Path(config.LOG_DIR)
+    if not run_id:
+        for path in sorted(logs.glob("run_*"), reverse=True)[:last]:
+            try:
+                meta, steps = load_run(path)
+            except (OSError, ValueError) as e:
+                console.print(Text(f"{path.name}  could not load: {e}", "ui_error"))
+                continue
+            outcome = meta.get("outcome", "unfinished")
+            tone = "ui_ok" if outcome == "done" else "ui_error" if outcome in ("crashed", "model_error", "parse_error") else "ui_warn"
+            console.print(Text(f"{path.name}  ").append(f"{outcome:12}", tone).append(f" {len(steps):>3} steps  {meta['task']}"))
+        return
+    meta, steps = load_run(logs / run_id)
+    ui = LineUI()
+    ui.emit("start", model=meta["model"], destination=meta.get("destination", "none"), dry_run=meta.get("dry_run", False),
+            apps=meta.get("apps", []))
+    for step in steps:
+        safety, execution = step["safety"] or {}, step["execution"]
+        if step["action"] and execution["status"] == "refused":
+            ui.emit("refused", action=step["action"], reason=execution["error"], element=safety.get("element"))
+        elif step["action"]:
+            ui.emit("act", action=step["action"], result=execution, element=safety.get("element"))
+    seconds = (datetime.fromisoformat(meta["end_time"]) - datetime.fromisoformat(meta["start_time"])).total_seconds() if "end_time" in meta else 0
+    ui.emit("end", outcome=meta.get("outcome", "unfinished"), message=steps[-1]["action"].get("answer", "") if steps and steps[-1]["action"] else "",
+            steps=len(steps), seconds=seconds, sent_bytes=sum(s.get("sent_bytes", 0) for s in steps), run_id=meta["run_id"])
 
 @app.command("eval")
 def eval_(

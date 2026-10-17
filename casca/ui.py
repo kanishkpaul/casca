@@ -103,7 +103,8 @@ class LineUI(UI):
             if f["action"]["action"] not in ("done", "fail", "handback"):
                 self._row(icon, verb, detail(f["action"], f.get("element")), tail, failed)
         elif event == "end":
-            outcome, message = f["outcome"], f.get("message") or ""
+            outcome = f["outcome"]
+            message = f.get("message") or outcome.replace("_", " ")
             if outcome in ENDS_OK:
                 self.out.print(Text("  " + message))
                 self.out.print(Text("ok ", "ui_ok").append(f"done in {f['steps']} steps · {f['seconds']:.0f} s · "

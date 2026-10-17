@@ -19,17 +19,6 @@ class SafetyPolicy:
         self.unsafe = unsafe
         self.allow_secret_entry = allow_secret_entry
 
-    def check_task(self, task: str) -> tuple[bool, str | None]:
-        task_lower = task.lower()
-        dangerous_keywords = ["password", "delete", "rm", "format", "buy", "purchase", "bank", "crypto"]
-
-        for keyword in dangerous_keywords:
-            if re.search(rf"\b{keyword}\b", task_lower):
-                if not self.unsafe:
-                    return False, f"Task contains sensitive keyword '{keyword}'. Use --unsafe to bypass."
-                    
-        return True, None
-
     def check_action(self, action: BaseAction, task: str) -> tuple[bool, str | None]:
         if self.unsafe:
             return True, None

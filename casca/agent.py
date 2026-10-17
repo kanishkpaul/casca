@@ -115,11 +115,6 @@ class CascaAgent:
                      destination=getattr(self.model, "destination", "none"), dry_run=self.dry_run, apps=self.apps)
         started, self.end_message, self.sent_bytes = time.monotonic(), None, 0
 
-        is_safe, reason = self.safety.check_task(task)
-        if not is_safe:
-            self.ui.emit("end", outcome="rejected", message=reason, steps=0, seconds=0, sent_bytes=0)
-            return "rejected"
-
         self.logger = RunLogger(log_dir=self.log_dir)
         self.logger.log_metadata(
             task, self.max_steps, getattr(self.model, "model", self.model.__class__.__name__),
